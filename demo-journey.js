@@ -56,14 +56,15 @@
       : "Is stock " + interestedStock + " still available? I’m comparing all-wheel-drive SUVs under " +
         dollars.format(budget) + " and haven’t decided when I’ll come in.";
     const firstName = inquiry.customer.split(" ")[0];
-    let reply = "Hi " + firstName + ", thanks for telling us what you’re looking for. ";
+    let reply = "Hi " + firstName + "! ";
     if (requestedVehicle && requestedVehicle.price >= budget) {
-      reply += "The car you asked about (stock " + interestedStock + ") is " +
-        dollars.format(requestedVehicle.price) + ", which is above your limit. ";
+      reply += "Stock " + interestedStock + " is " +
+        dollars.format(requestedVehicle.price) + ", above your limit. ";
     }
     if (recommended) {
-      reply += "We have a " + recommended.model + " with all-wheel drive for " +
-        dollars.format(recommended.price) + " (stock " + recommended.stock + "). ";
+      reply += recommended.stock === interestedStock
+        ? "Stock " + recommended.stock + " is available for " + dollars.format(recommended.price) + ". "
+        : "I found an AWD " + recommended.model + " for " + dollars.format(recommended.price) + " (stock " + recommended.stock + "). ";
       reply += readyToVisit ? "Would Saturday morning work for a test drive?" : "Would you like more details while you compare options?";
     } else {
       reply += "I can keep an eye out for an all-wheel-drive SUV in your budget. Would you like an update when one comes in?";

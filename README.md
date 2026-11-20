@@ -6,9 +6,9 @@ A buyer sends a message through the dealership website. The inquiry can still be
 
 [Try the interactive demo](https://danthomasmanagement-debug.github.io/dealership-lead-reconciliation/) or open **index.html** locally. The dashboard starts with fictional dealership records and runs entirely in the browser. It needs no account, API key, installation, or network connection when opened locally.
 
-1. Select **Start demo** and recover Maya’s inquiry. Compare the sales-record counts before and after. **Test a safe retry** demonstrates that the second attempt adds zero records.
-2. Select **Preview follow-up** and try different conditions for the buyer’s budget or visit timeline. Vehicle matches, the intent badge, and the draft reply update while the original website inquiry stays in view.
-3. Queue the draft with the buyer’s consent, then download a case report from the handoff screen. **Simulate sale** is an optional final action.
+1. Select **Start demo** and **Recover Maya’s inquiry**. **Case details** contains the before-and-after evidence and the repeat-safe recovery test.
+2. Select **See suggested reply**. Open **Customize reply** to try a different budget or visit timeline and compare the results with the original inquiry.
+3. Select **Queue sample reply**. The final screen offers a downloadable report. **More options** includes the queued draft and optional sale simulation.
 
 Open **Try the routing challenge** to compare another buyer’s original dealership with the sales record. Choose the destination from the evidence and run the correction. A wrong destination changes zero records. The right destination updates one field, and repeating the correction leaves the records unchanged. The case report includes the original value, current value, and the run’s timestamped actions.
 

@@ -370,7 +370,7 @@
 
   function updateTrace() {
     const recovered = recoveryProof !== null;
-    setText("story-sales-title", recovered ? "Recovered" : "No record found");
+    setText("story-sales-title", recovered ? "Recovered" : "Missing");
     byId("story-sales").classList.toggle("recovered", recovered);
     for (const button of traceSources) {
       button.setAttribute("aria-pressed", String(button.dataset.trace === traceSource));
@@ -381,7 +381,10 @@
         : "Search for " + sampleInquiry.lead_id + " returned no matching sales record.");
     byId("recovery-proof").hidden = !recovered;
     byId("retry-receipt").hidden = recoveryAttempts < 2;
+    byId("guided-success").hidden = !recovered;
+    byId("verify-retry").hidden = !recovered;
     if (recovered) {
+      setText("guided-count", recoveryProof.salesBefore + " → " + salesRecordCount(recoveryProof.salesAfter));
       setText("proof-before", salesRecordCount(recoveryProof.salesBefore));
       setText("proof-after", salesRecordCount(recoveryProof.salesAfter));
       setText("proof-impact", recoveryImpact());
@@ -391,15 +394,19 @@
       }
     }
     byId("show-follow-up").hidden = !recovered;
-    setText("show-follow-up", followUpQueued ? "Review follow-up" : "Preview follow-up");
-    byId("run-test").hidden = followUpQueued;
-    setText("run-test", recovered ? "Test a safe retry" : "Recover inquiry");
-    byId("run-test").classList.toggle("primary", !recovered);
-    byId("run-test").classList.toggle("secondary", recovered);
+    setText("show-follow-up", followUpQueued ? "See queued reply" : "See suggested reply");
+    byId("run-test").hidden = recovered;
   }
 
   function currentPlan() {
     return journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value, selectedStock);
+  }
+
+  function renderSuggestion(plan) {
+    const car = plan.recommended;
+    setText("suggested-car", car ? car.model + " · " + journey.dollars.format(car.price) : "Inventory follow-up");
+    setText("suggestion-reason", car ? "All-wheel drive · Within budget" : "No cars match this budget");
+    setText("reply-message", plan.reply);
   }
 
   function updateFollowUp() {
@@ -429,25 +436,22 @@
       return item;
     });
     byId("vehicle-list").replaceChildren(...matches);
-    setText("reply-message", plan.reply);
-    setText("reply-state", followUpQueued ? "Queued in demo" : "Draft");
-    byId("what-if-note").hidden = followUpQueued;
+    renderSuggestion(plan);
+    setText("reply-state", followUpQueued ? "Queued in demo" : "Suggested reply");
     for (const input of [budgetInput, timingInput, consentInput]) input.disabled = followUpQueued;
     byId("queue-follow-up").hidden = followUpQueued;
     byId("review-outcome").hidden = !followUpQueued;
     byId("queue-follow-up").setAttribute("aria-disabled", String(!consentInput.checked));
     byId("follow-up-status").hidden = consentInput.checked;
-    setText("follow-up-status", consentInput.checked ? "" : "The reply stays a draft until the buyer opts in.");
+    setText("follow-up-status", consentInput.checked ? "" : "Buyer consent is required.");
   }
 
   function updateOutcome() {
-    setText("handoff-summary", sampleInquiry.lead_id + " is verified in the sales system. " +
-      "Buyer opt-in confirmed. " + (queuedCar ? "Draft queued with stock " + queuedCar.stock + "." :
-        "An inventory update is queued."));
+    setText("handoff-summary", queuedCar ? "Stock " + queuedCar.stock + " · Buyer consent confirmed" :
+      "Inventory follow-up · Buyer consent confirmed");
     byId("scoreboard").hidden = !dealWon;
     if (dealWon) showScoreProof(0);
     byId("close-deal").hidden = dealWon;
-    byId("restart-story").className = "button " + (dealWon ? "primary" : "secondary");
   }
 
   function showScoreProof(active) {
@@ -469,7 +473,7 @@
     byId("story-trace-view").hidden = step !== 0;
     byId("follow-up-view").hidden = step !== 1;
     byId("outcome-view").hidden = step !== 2;
-    const completed = [recoveryProof !== null, followUpQueued, dealWon];
+    const completed = [recoveryProof !== null, followUpQueued, followUpQueued];
     for (const [index, item] of caseSteps.entries()) {
       const complete = completed[index];
       item.classList.toggle("complete", complete);
@@ -478,7 +482,8 @@
       item.setAttribute("aria-current", index === step ? "step" : "false");
       item.querySelector("button").disabled = index > 0 && !completed[index - 1];
     }
-    const titles = ["Maya Patel’s inquiry", "Help Maya find a car", dealWon ? "Sample deal won" : "Handoff ready"];
+    const titles = [recoveryProof ? "Maya’s inquiry is back" : "Recover the inquiry",
+      "Review the reply", dealWon ? "Sample deal won" : "Reply queued"];
     setText("story-title", titles[step]);
     [updateTrace, updateFollowUp, updateOutcome][step]();
     if (moveFocus) {
@@ -501,6 +506,8 @@
     consentInput.checked = true;
     clearCaseEvents("recovery", eventLog, 2);
     byId("queued-reply-text").closest("details").open = false;
+    for (const id of ["case-details", "original-inquiry", "reply-customize", "outcome-options"]) byId(id).open = false;
+    for (const id of ["guided-success", "guided-done"]) byId(id).classList.remove("is-fresh");
     showStoryStep(0, false);
   }
 
@@ -640,7 +647,7 @@
     replaceDataset(sample.website, sample.crm, "Sample data");
     showImportMessage("Sample records restored.");
   });
-  byId("run-test").addEventListener("click", () => {
+  function runRecovery() {
     const prior = demoSales;
     const recovery = journey.recover(sampleInquiry, demoSales);
     recoveryAttempts += 1;
@@ -662,16 +669,24 @@
     } else {
       logAction("Retry " + (recoveryAttempts - 1) + " skipped", "Inquiry already present");
     }
-    showStoryStep(0, false);
     if (recovery.added) {
+      byId("guided-success").classList.add("is-fresh");
+      showStoryStep(0, false);
       const next = byId("show-follow-up");
       next.focus({ preventScroll: true });
       next.scrollIntoView({ block: "nearest" });
+    } else {
+      updateTrace();
     }
-  });
+  }
+  byId("run-test").addEventListener("click", runRecovery);
+  byId("verify-retry").addEventListener("click", runRecovery);
   byId("show-follow-up").addEventListener("click", () => showStoryStep(1));
-  byId("back-to-trace").addEventListener("click", () => showStoryStep(0));
   byId("review-outcome").addEventListener("click", () => showStoryStep(2));
+  byId("finish-customizing").addEventListener("click", () => {
+    byId("reply-customize").open = false;
+    byId(followUpQueued ? "review-outcome" : "queue-follow-up").focus();
+  });
   for (const [index, step] of caseSteps.entries()) {
     step.querySelector("button").addEventListener("click", () => showStoryStep(index));
   }
@@ -691,7 +706,7 @@
   byId("vehicle-list").addEventListener("change", (event) => {
     if (event.target.name !== "offered-stock") return;
     selectedStock = event.target.value;
-    setText("reply-message", currentPlan().reply);
+    renderSuggestion(currentPlan());
   });
   byId("queue-follow-up").addEventListener("click", () => {
     if (!consentInput.checked || followUpQueued || recoveryProof === null) return;
@@ -702,6 +717,7 @@
     logAction("Follow-up queued", queuedCar
       ? "Stock " + queuedCar.stock + " · " + journey.dollars.format(queuedCar.price)
       : "Availability update");
+    byId("guided-done").classList.add("is-fresh");
     showStoryStep(2);
   });
   byId("close-deal").addEventListener("click", () => {
@@ -745,9 +761,10 @@
 
   setText("case-id", sampleInquiry.lead_id);
   setText("proof-id", sampleInquiry.lead_id);
-  for (const id of ["website-time", "message-time"]) {
-    byId(id).dateTime = sampleInquiry.submitted_at;
-    setText(id, receivedTime);
+  byId("message-time").dateTime = sampleInquiry.submitted_at;
+  setText("message-time", receivedTime);
+  for (const id of ["guided-success", "guided-done"]) {
+    byId(id).addEventListener("animationend", () => byId(id).classList.remove("is-fresh"));
   }
   setText("received-event", profileTime.format(new Date(sampleInquiry.submitted_at)) + " PT · " + sampleInquiry.lead_id);
   setText("routing-case-id", routingInquiry.lead_id + " · Stock " + routingInquiry.vehicle);
