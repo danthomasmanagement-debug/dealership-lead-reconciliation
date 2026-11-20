@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#f7f6ef">
   <title>Lead Check | Dealership inquiry demo</title>
   <link rel="preload" href="instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
   <script defer src="reconcile.js"></script>
   <script defer src="sample-data.js"></script>
   <script defer src="demo-journey.js"></script>
-  <script defer src="app.js?v=3"></script>
+  <script defer src="app.js?v=4"></script>
 </head>
 <body>
   <header class="site-header">
@@ -20,10 +20,6 @@
         <span class="brand-mark" aria-hidden="true"></span>
         Lead Check
       </a>
-      <nav aria-label="Page sections">
-        <a href="#records">Inquiry records</a>
-        <a href="#sources">Try your own files</a>
-      </nav>
       <span id="dataset-label" class="dataset-label">Sample data</span>
     </div>
   </header>
@@ -33,42 +29,124 @@
       <div class="hero-copy">
         <p class="eyebrow">Dealership inquiry demo</p>
         <h1 id="title">Maya asked about a car. <em>Her inquiry went missing.</em></h1>
-        <p>The website received her message. The sales system had no record of it. See how a simple check finds the gap and tests a recovery.</p>
-        <div class="hero-actions">
-          <button class="button primary" type="button" id="sample-example">See what happened</button>
-          <a class="quiet-link" id="review-exceptions" href="#records">View all inquiries</a>
-        </div>
+        <p>The website saved her message, but it never reached the sales team. Try recovering it and see what the team can do next.</p>
+        <a class="quiet-link" id="review-exceptions" href="#records">View all inquiries</a>
         <p class="hero-note">Fictional data. No sign-in required.</p>
       </div>
-      <figure class="hero-visual">
-        <img src="showroom.webp" alt="" width="1536" height="1024" fetchpriority="high">
-        <figcaption class="hero-case">
-          <div><span>Website form</span><strong>Inquiry received</strong></div>
-          <div><span>Sales system</span><strong id="hero-sales-state">No record found</strong></div>
-        </figcaption>
-      </figure>
+      <section class="case-panel" aria-labelledby="story-title">
+        <ol id="case-progress" class="case-progress" aria-label="Demo progress">
+          <li aria-current="step"><span>1</span> Recovery</li>
+          <li><span>2</span> Follow-up</li>
+          <li><span>3</span> Outcome</li>
+        </ol>
+        <div class="case-content">
+          <p class="case-id">Riverbend Motors <span aria-hidden="true">/</span> <span id="case-id">LD-1002</span></p>
+          <h2 id="story-title" tabindex="-1">Maya Patel’s inquiry</h2>
+          <div id="story-trace-view">
+            <dl class="story-trace">
+              <div class="story-step">
+                <dt>Website form</dt>
+                <dd><strong>Received</strong> <time id="website-time"></time></dd>
+              </div>
+              <div class="story-step" id="story-sales">
+                <dt>Sales system</dt>
+                <dd><strong id="story-sales-title">No record found</strong></dd>
+              </div>
+            </dl>
+            <p id="story-summary" class="case-note">The two systems are checked using the same inquiry ID.</p>
+            <div class="story-receipt" id="story-receipt" role="status" hidden>
+              <strong id="receipt-title"></strong>
+              <p id="receipt-detail"></p>
+            </div>
+            <div class="story-actions">
+              <button id="show-follow-up" class="button primary advance" type="button" hidden>Preview follow-up</button>
+              <button id="run-test" class="button primary advance" type="button">Recover inquiry</button>
+            </div>
+          </div>
+          <div id="follow-up-view" hidden>
+            <div class="conversation">
+              <section class="conversation-message">
+                <h3>Maya’s message</h3>
+                <p id="buyer-message"></p>
+              </section>
+              <div class="intent-note" aria-live="polite">
+                <strong id="intent-level"></strong>
+                <span id="intent-reason"></span>
+              </div>
+            </div>
+            <div class="follow-controls">
+              <label>Buyer’s budget
+                <select id="buyer-budget">
+                  <option value="28000">Under $28,000</option>
+                  <option value="32000" selected>Under $32,000</option>
+                  <option value="36000">Under $36,000</option>
+                </select>
+              </label>
+              <label>Buyer’s timeline
+                <select id="buyer-timing">
+                  <option value="soon">Ready to visit</option>
+                  <option value="exploring">Just browsing</option>
+                </select>
+              </label>
+            </div>
+            <section class="vehicle-matches">
+              <h3>Matching cars</h3>
+              <ul id="vehicle-list"></ul>
+            </section>
+            <section class="conversation-message reply">
+              <h3>Draft reply</h3>
+              <p id="reply-message"></p>
+            </section>
+            <label class="consent-control"><input id="buyer-consent" type="checkbox" checked> Buyer opted in to follow-up</label>
+            <p id="follow-up-status" class="case-note" role="status" hidden></p>
+            <div class="story-actions">
+              <button id="queue-follow-up" class="button primary advance" type="button">Queue demo follow-up</button>
+              <button id="back-to-trace" class="text-button" type="button">Back to recovery</button>
+            </div>
+          </div>
+          <div id="outcome-view" hidden>
+            <p id="outcome-summary" class="case-note"></p>
+            <ol class="event-log" aria-label="Inquiry activity">
+              <li><strong>Website saved Maya’s inquiry</strong><span id="received-event"></span></li>
+              <li class="event-missing"><strong>Sales record missing</strong><span>No matching inquiry ID</span></li>
+              <li><strong>Recovery created one record</strong><span id="recovered-event"></span></li>
+              <li id="duplicate-event" hidden><strong>Repeat recovery skipped</strong><span>The sales record was already there</span></li>
+              <li><strong>Follow-up queued</strong><span id="queued-event"></span></li>
+              <li id="won-event" hidden><strong>Deal marked won</strong><span>Sales outcome recorded in the demo</span></li>
+            </ol>
+            <section class="scoreboard" aria-labelledby="score-title" id="scoreboard" hidden>
+              <h3 id="score-title">Agent scoreboard</h3>
+              <div>
+                <span><strong>1</strong> Inquiry recovered</span>
+                <span><strong>1</strong> Follow-up queued</span>
+                <span><strong>1</strong> Deal won</span>
+              </div>
+            </section>
+            <div class="story-actions">
+              <button id="close-deal" class="button primary advance" type="button">Mark deal won</button>
+              <button id="restart-story" class="button secondary" type="button">Restart demo</button>
+            </div>
+          </div>
+        </div>
+      </section>
     </section>
 
     <section class="metrics" aria-label="Reconciliation summary">
       <article class="metric">
-        <p>Missing inquiries</p>
         <strong id="missing-count">0</strong>
-        <span>Website inquiries with no sales record</span>
+        <span>missing inquiries</span>
       </article>
       <article class="metric">
-        <p>Matched</p>
         <strong id="matched-count">0</strong>
-        <span>Same details in both systems</span>
+        <span>matched</span>
       </article>
       <article class="metric">
-        <p>Needs review</p>
         <strong id="exception-count">0</strong>
-        <span>Distinct inquiries with an issue</span>
+        <span>need review</span>
       </article>
       <article class="metric">
-        <p>Match rate</p>
         <strong id="match-rate">—</strong>
-        <span id="match-rate-caption">of website inquiries</span>
+        <span id="match-rate-caption">of website inquiries match</span>
       </article>
     </section>
 
@@ -152,93 +230,6 @@
     <span>Independent demo with fictional dealership records.</span>
     <a href="#overview">Back to overview</a>
   </footer>
-
-  <dialog id="story-dialog" aria-labelledby="story-title">
-    <div class="dialog-heading">
-      <div>
-        <p class="eyebrow">Sample inquiry</p>
-        <h2 id="story-title">What happened to Maya’s message?</h2>
-      </div>
-      <button id="close-story" class="button secondary small" type="button" autofocus>Close</button>
-    </div>
-    <div id="story-trace-view">
-      <p id="story-summary" class="detail-note"></p>
-      <div class="story-trace">
-        <section class="story-step">
-          <p>Dealership website</p>
-          <h3>Inquiry received</h3>
-          <span id="story-web"></span>
-        </section>
-        <section class="story-step" id="story-sales">
-          <p>Sales system</p>
-          <h3 id="story-sales-title"></h3>
-          <span id="story-sales-detail"></span>
-        </section>
-      </div>
-      <section class="story-receipt" id="story-receipt" aria-live="polite" hidden>
-        <h3 id="receipt-title"></h3>
-        <p id="receipt-detail"></p>
-      </section>
-      <div class="story-actions">
-        <button id="run-test" class="button primary" type="button">Try sending it again</button>
-        <button id="show-follow-up" class="button primary" type="button" hidden>Preview a follow-up</button>
-        <button id="story-records" class="text-button" type="button">View all inquiries</button>
-      </div>
-    </div>
-    <div id="follow-up-view" hidden>
-      <p class="detail-note">Match Maya’s needs to available cars and preview a reply that the sales team can review.</p>
-      <div class="follow-controls">
-        <label>Buyer’s budget
-          <select id="buyer-budget">
-            <option value="28000">Under $28,000</option>
-            <option value="32000" selected>Under $32,000</option>
-            <option value="36000">Under $36,000</option>
-          </select>
-        </label>
-        <label>Buyer’s timeline
-          <select id="buyer-timing">
-            <option value="soon">Ready to visit</option>
-            <option value="exploring">Just browsing</option>
-          </select>
-        </label>
-      </div>
-      <div class="conversation">
-        <section class="conversation-message">
-          <h3>Maya’s inquiry</h3>
-          <p id="buyer-message"></p>
-        </section>
-        <div class="intent-note">
-          <strong id="intent-level"></strong>
-          <span id="intent-reason"></span>
-        </div>
-      </div>
-      <section class="vehicle-matches">
-        <h3>Matching cars</h3>
-        <ul id="vehicle-list"></ul>
-      </section>
-      <section class="conversation-message reply">
-        <h3>Example reply</h3>
-        <p id="reply-message"></p>
-      </section>
-      <label class="consent-control"><input id="buyer-consent" type="checkbox" checked> Buyer opted in to follow-up</label>
-      <p id="follow-up-status" class="story-note" role="status"></p>
-      <div class="story-actions">
-        <button id="queue-follow-up" class="button primary" type="button">Queue demo follow-up</button>
-        <button id="close-deal" class="button secondary" type="button" hidden>Mark demo deal won</button>
-        <button id="back-to-trace" class="text-button" type="button">Back to the inquiry</button>
-        <button id="restart-story" class="text-button" type="button" hidden>Start over</button>
-      </div>
-      <section class="scoreboard" aria-labelledby="score-title">
-        <h3 id="score-title">Agent scoreboard</h3>
-        <div>
-          <span><strong id="score-recovered">0</strong> Inquiry recovered</span>
-          <span><strong id="score-follow-up">0</strong> Follow-up queued</span>
-          <span><strong id="score-won">0</strong> Deal marked won</span>
-        </div>
-      </section>
-    </div>
-    <p class="story-note">This example runs on fictional data. Recovery, message delivery, and sale are simulated.</p>
-  </dialog>
 
   <dialog id="detail-dialog" aria-labelledby="detail-title">
     <div class="dialog-heading">

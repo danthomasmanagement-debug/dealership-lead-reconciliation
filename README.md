@@ -6,10 +6,9 @@ A buyer sends a message through the dealership website. The inquiry can still be
 
 [Try the interactive demo](https://danthomasmanagement-debug.github.io/dealership-lead-reconciliation/) or open **index.html** locally. The dashboard starts with fictional dealership records and runs entirely in the browser. It needs no account, API key, installation, or network connection when opened locally.
 
-1. Select **See what happened** to compare the website and sales records for Maya’s inquiry.
-2. Select **Try sending it again** to recover the sample inquiry. **Test again** shows how the check avoids adding a second record.
-3. Select **Preview a follow-up** and change Maya’s budget or visit timeline. The example conversation, intent badge, vehicle matches, and draft reply update together.
-4. Toggle the buyer’s opt-in to see when the reply can be queued. Queue it in the demo, then mark the sample deal won to update the agent scoreboard.
+1. Compare the website and sales system records at the top of the page. Select **Recover inquiry** to add the missing sales record. **Test duplicate check** shows what happens when the same inquiry is already present.
+2. Select **Preview follow-up** and change Maya’s budget or visit timeline. The example conversation, intent badge, vehicle matches, and draft reply update together.
+3. Toggle the buyer’s opt-in to see when the reply can be queued. The activity timeline records the simulated recovery and follow-up. Select **Mark deal won** to add the example sales outcome and reveal the agent scoreboard.
 
 For the full comparison, choose **View all inquiries**. Search by lead ID, buyer, dealership, or stock ID, and download a CSV follow-up list. Under **Try your own files**, use the sample CSVs as templates and compare two exports locally.
 
@@ -35,12 +34,12 @@ All built-in people, dealerships, and records are fictional.
 
 ## Visual design
 
-The typography, spacing, and clear action hierarchy were informed by the [Apple homepage](https://www.apple.com/) and a Claude design critique of a fictional brief. The original showroom image is stored as **showroom.webp** and was created with built-in ImageGen. The locally hosted typefaces are DM Sans and Instrument Serif. Their SIL Open Font Licenses are included.
+Claude reviewed screenshots of the previous design and the complete executable source of the revised demo. The recovery receipt follows the delivery-status and retry patterns in [Stripe Workbench](https://docs.stripe.com/webhooks#debug-webhook-integrations). The in-page journey uses a [progress tracker](https://atlassian.design/components/progress-tracker/) and an [activity timeline](https://knowledge.hubspot.com/records/work-with-records) to show what has changed. The locally hosted typefaces are DM Sans and Instrument Serif. Their SIL Open Font Licenses are included.
 
 The walkthrough was informed by public Foureyes material on [checking for and recovering missing inquiries](https://support.foureyes.io/en/articles/9397753-why-does-foureyes-recover-a-lead), [routing recovered inquiries](https://support.foureyes.io/en/articles/6571485-how-can-i-make-sure-recovered-prospects-are-routed-correctly-in-my-crm), and [inventory-based follow-up](https://www.foureyes.io/case-studies/why-audi-bellevue-stuck-with-foureyes). This project is a standalone demonstration.
 
 <details>
-<summary>Image generation prompt</summary>
+<summary>Image generation prompt for the earlier showroom artwork</summary>
 
 > Use case: photorealistic-natural. Asset type: wide web banner for an independent automotive dealership data demo. Wide cinematic photograph of a minimalist glass car dealership at blue hour, with a single unbranded silver graphite modern vehicle seen from the side through the windows on the right half. Contemporary flat-roof glass architecture, charcoal structural frames, wet asphalt with restrained cool teal and silver-white reflections, a few soft linear showroom lights, premium architectural editorial photography, photographic realism. Composition: 3:2 wide image, the primary vehicle and architectural interest on the right two-thirds, very dark quiet negative space on the left third that blends into near-black blue-green. Camera at street level, clean architectural lines, subtle depth. No people, absolutely no text, signs, logos, license-plate lettering, watermarks, graphical overlays, data graphics, or prominent recognizable manufacturer details. Deep green slate and cool white tones, high contrast, refined natural grading. This is a backdrop for legible web-interface text.
 

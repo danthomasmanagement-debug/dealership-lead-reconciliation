@@ -9,7 +9,7 @@
   const pageSize = 8;
   const filterButtons = Array.from(document.querySelectorAll("[data-filter]"));
   const dialog = byId("detail-dialog");
-  const story = byId("story-dialog");
+  const caseSteps = Array.from(byId("case-progress").children);
   const importForm = byId("import-form");
   const importButton = importForm.querySelector("button[type='submit']");
   const searchInput = byId("search");
@@ -19,6 +19,9 @@
     crm_only: "Sales system only", matched: "Matched"
   };
   const sampleInquiry = sample.website.find((row) => row.lead_id === "LD-1002");
+  const receivedTime = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles"
+  }).format(new Date(sampleInquiry.submitted_at)) + " PT";
   const budgetInput = byId("buyer-budget");
   const timingInput = byId("buyer-timing");
   const consentInput = byId("buyer-consent");
@@ -48,7 +51,7 @@
     setText("exception-count", formatNumber.format(result.issueCount));
     setText("missing-count", formatNumber.format(result.missingFromCrm));
     setText("match-rate", result.websiteUnique ? Math.round(100 * result.counts.matched / result.websiteUnique) + "%" : "—");
-    setText("match-rate-caption", formatNumber.format(result.counts.matched) + " of " +
+    setText("match-rate-caption", "match rate · " + formatNumber.format(result.counts.matched) + " of " +
       formatNumber.format(result.websiteUnique) + " website inquiries");
     byId("export").disabled = result.issueCount === 0;
 
@@ -189,26 +192,23 @@
 
   function updateTrace() {
     const recovered = lastRecovery !== null;
-    setText("story-summary", recovered
-      ? "Maya’s inquiry is now visible in the sample sales system."
-      : "The website saved Maya’s message, but the sales team’s system had no matching inquiry.");
-    setText("story-web", sampleInquiry.customer + " · " + sampleInquiry.dealership + " · Stock " + sampleInquiry.vehicle);
-    setText("story-sales-title", recovered ? "Inquiry found" : "No record found");
-    setText("story-sales-detail", recovered
-      ? "The sales team can now see the request about stock " + sampleInquiry.vehicle + "."
-      : "The sales team’s list had no entry for Maya’s request.");
-    setText("hero-sales-state", recovered ? "Recovered in demo" : "No record found");
+    setText("story-sales-title", recovered ? "Recovered" : "No record found");
     byId("story-sales").classList.toggle("recovered", recovered);
+    byId("story-summary").hidden = recovered;
     byId("story-receipt").hidden = !recovered;
     if (recovered) {
-      setText("receipt-title", lastRecovery ? "Inquiry recovered" : "Already recorded");
+      setText("receipt-title", lastRecovery ? "One sales record added" : "Duplicate prevented");
       setText("receipt-detail", lastRecovery
-        ? "The test checked for the inquiry ID first, then added one matching record."
-        : "The check found the existing inquiry and skipped it. The record count stayed the same.");
+        ? "The sales team can now see " + sampleInquiry.lead_id + "."
+        : sampleInquiry.lead_id + " was already there. The test added zero records.");
+    }
+    if (recovered && followUpQueued) {
+      setText("show-follow-up", dealWon ? "View deal outcome" : "View queued follow-up");
     }
     byId("show-follow-up").hidden = !recovered;
-    setText("run-test", recovered ? "Test again" : "Try sending it again");
-    byId("run-test").className = "button " + (recovered ? "secondary" : "primary");
+    setText("run-test", recovered ? "Test duplicate check" : "Recover inquiry");
+    byId("run-test").classList.toggle("primary", !recovered);
+    byId("run-test").classList.toggle("secondary", recovered);
   }
 
   function updateFollowUp() {
@@ -230,31 +230,39 @@
     });
     byId("vehicle-list").replaceChildren(...matches);
     setText("reply-message", plan.reply);
-    setText("score-recovered", lastRecovery === null ? "0" : "1");
-    setText("score-follow-up", followUpQueued ? "1" : "0");
-    setText("score-won", dealWon ? "1" : "0");
-    byId("queue-follow-up").disabled = followUpQueued || !consentInput.checked;
-    byId("close-deal").hidden = !followUpQueued;
-    byId("close-deal").disabled = dealWon;
-    byId("restart-story").hidden = !dealWon;
-    budgetInput.disabled = followUpQueued;
-    timingInput.disabled = followUpQueued;
-    consentInput.disabled = followUpQueued;
-    setText("follow-up-status", dealWon ? "The sample deal is marked won." :
-      followUpQueued ? "The reply is saved to the demo queue." :
-      consentInput.checked ? "Opt-in confirmed. This reply can be queued in the demo." :
-      "This reply stays a draft because the buyer hasn’t opted in.");
+    byId("queue-follow-up").disabled = !consentInput.checked;
+    byId("follow-up-status").hidden = consentInput.checked;
+    setText("follow-up-status", consentInput.checked ? "" : "The reply stays a draft until the buyer opts in.");
   }
 
-  function showStoryStep(followUp) {
-    byId("story-trace-view").hidden = followUp;
-    byId("follow-up-view").hidden = !followUp;
-    setText("story-title", followUp ? "Help Maya find a car" : "What happened to Maya’s message?");
-    if (followUp) updateFollowUp();
-    else updateTrace();
-    if (story.open) {
-      story.scrollTop = 0;
-      byId(followUp ? "buyer-budget" : "close-story").focus({ preventScroll: true });
+  function updateOutcome() {
+    setText("outcome-summary", dealWon
+      ? "Maya’s recovered inquiry became a sale in this example."
+      : "The draft is saved in the demo queue. You can now record the sample sales outcome.");
+    byId("duplicate-event").hidden = lastRecovery !== false;
+    byId("won-event").hidden = !dealWon;
+    byId("scoreboard").hidden = !dealWon;
+    byId("close-deal").hidden = dealWon;
+    byId("restart-story").className = "button " + (dealWon ? "primary" : "secondary");
+  }
+
+  function showStoryStep(step, moveFocus = true) {
+    byId("story-trace-view").hidden = step !== 0;
+    byId("follow-up-view").hidden = step !== 1;
+    byId("outcome-view").hidden = step !== 2;
+    for (const [index, item] of caseSteps.entries()) {
+      const complete = index < step || (index === 2 && dealWon);
+      item.classList.toggle("complete", complete);
+      item.firstElementChild.textContent = complete ? "✓" : String(index + 1);
+      item.setAttribute("aria-current", index === step ? "step" : "false");
+    }
+    const titles = ["Maya Patel’s inquiry", "Help Maya find a car", dealWon ? "Deal won" : "Follow-up queued"];
+    setText("story-title", titles[step]);
+    [updateTrace, updateFollowUp, updateOutcome][step]();
+    if (moveFocus) {
+      const title = byId("story-title");
+      title.focus({ preventScroll: true });
+      byId("case-progress").scrollIntoView({ block: "nearest" });
     }
   }
 
@@ -266,7 +274,8 @@
     budgetInput.value = "32000";
     timingInput.value = "soon";
     consentInput.checked = true;
-    updateTrace();
+    setText("show-follow-up", "Preview follow-up");
+    showStoryStep(0, false);
   }
 
   function showImportMessage(message, isError = false) {
@@ -344,11 +353,6 @@
     replaceDataset(sample.website, sample.crm, "Sample data");
     showImportMessage("Sample records restored.");
   });
-  byId("sample-example").addEventListener("click", () => {
-    showStoryStep(false);
-    story.showModal();
-  });
-  byId("close-story").addEventListener("click", () => story.close());
   byId("run-test").addEventListener("click", () => {
     const recovery = journey.recover(sampleInquiry, demoSales);
     lastRecovery = recovery.added;
@@ -359,33 +363,33 @@
       renderTable();
     }
     updateTrace();
-    if (recovery.added) byId("show-follow-up").focus();
+    if (recovery.added) byId("show-follow-up").focus({ preventScroll: true });
   });
-  byId("show-follow-up").addEventListener("click", () => showStoryStep(true));
-  byId("back-to-trace").addEventListener("click", () => showStoryStep(false));
-  byId("story-records").addEventListener("click", () => {
-    story.close();
-    byId("review-exceptions").click();
-  });
+  byId("show-follow-up").addEventListener("click", () => showStoryStep(followUpQueued ? 2 : 1));
+  byId("back-to-trace").addEventListener("click", () => showStoryStep(0));
   for (const input of [budgetInput, timingInput, consentInput]) input.addEventListener("change", updateFollowUp);
   byId("queue-follow-up").addEventListener("click", () => {
     if (!consentInput.checked || followUpQueued || lastRecovery === null) return;
     followUpQueued = true;
-    updateFollowUp();
-    byId("close-deal").focus();
+    setText("queued-event", "Saved in the demo queue");
+    showStoryStep(2);
   });
   byId("close-deal").addEventListener("click", () => {
     if (!followUpQueued || dealWon) return;
     dealWon = true;
-    updateFollowUp();
-    byId("restart-story").focus();
+    showStoryStep(2);
   });
   byId("restart-story").addEventListener("click", () => {
     resetJourney();
     if (usingSample) replaceDataset(sample.website, sample.crm, "Sample data");
-    showStoryStep(false);
+    showStoryStep(0);
   });
 
+  setText("case-id", sampleInquiry.lead_id);
+  byId("website-time").dateTime = sampleInquiry.submitted_at;
+  setText("website-time", receivedTime);
+  setText("received-event", receivedTime + " · " + sampleInquiry.lead_id);
+  setText("recovered-event", "Sales system · " + sampleInquiry.lead_id);
   createLegend();
   replaceDataset(sample.website, sample.crm, "Sample data");
 })();
