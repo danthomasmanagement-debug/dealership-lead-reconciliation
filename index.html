@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Compare dealership website leads with CRM records and investigate the gaps.">
+  <meta name="theme-color" content="#102a2a">
+  <title>Lead Reconciliation | Interactive demo</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="reconcile.js"></script>
+  <script defer src="sample-data.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="#overview">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        Lead Reconciliation
+      </a>
+      <nav aria-label="Page sections">
+        <a href="#overview">Overview</a>
+        <a href="#records">Records</a>
+        <a href="#sources">Data sources</a>
+      </nav>
+      <span id="dataset-label" class="dataset-label">Sample data</span>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section id="overview" class="hero" aria-labelledby="title">
+      <div class="hero-copy">
+        <h1 id="title">See which leads<br class="hero-break"> made it to the CRM.</h1>
+        <p>Compare dealership website inquiries with CRM records. Find missing leads, duplicates, and changes worth checking.</p>
+        <a class="button primary" id="review-exceptions" href="#records">Review exceptions</a>
+      </div>
+      <div class="flow" aria-label="Reconciliation data flow">
+        <div class="flow-node flow-source">
+          <span class="flow-icon" aria-hidden="true">W</span>
+          <div><strong>Website intake</strong><small id="web-count">0 records</small></div>
+        </div>
+        <div class="flow-node flow-source">
+          <span class="flow-icon" aria-hidden="true">C</span>
+          <div><strong>CRM export</strong><small id="crm-count">0 records</small></div>
+        </div>
+        <div class="flow-node flow-result">
+          <span class="flow-icon" aria-hidden="true">✓</span>
+          <div><strong>Reconciled leads</strong><small id="union-count">0 unique IDs</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Reconciliation summary">
+      <article class="metric">
+        <p>Match rate</p>
+        <strong id="match-rate">—</strong>
+        <span id="match-rate-caption">of website leads</span>
+      </article>
+      <article class="metric">
+        <p>Matched</p>
+        <strong id="matched-count">0</strong>
+        <span>Same details in both sources</span>
+      </article>
+      <article class="metric">
+        <p>Needs review</p>
+        <strong id="exception-count">0</strong>
+        <span>Unique lead IDs with issues</span>
+      </article>
+      <article class="metric">
+        <p>Missing from CRM</p>
+        <strong id="missing-count">0</strong>
+        <span>Website leads with no CRM record</span>
+      </article>
+    </section>
+
+    <div class="workspace">
+      <section id="records" class="panel records-panel" aria-labelledby="records-title">
+        <div class="panel-heading">
+          <div>
+            <h2 id="records-title">Lead records</h2>
+            <p id="table-caption" aria-live="polite">Loading sample records</p>
+          </div>
+          <button id="export" type="button" class="button secondary">
+            Export exceptions
+          </button>
+        </div>
+        <div class="table-controls">
+          <div class="segmented" aria-label="Filter lead records">
+            <button type="button" data-filter="issues" aria-pressed="true">Needs review</button>
+            <button type="button" data-filter="all" aria-pressed="false">All leads</button>
+            <button type="button" data-filter="matched" aria-pressed="false">Matched</button>
+          </div>
+          <label class="search-field">
+            <span class="sr-only">Search lead records</span>
+            <input id="search" type="search" placeholder="Search leads">
+          </label>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Lead</th>
+                <th scope="col">Dealership</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="sr-only">Details</span></th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div id="pages" class="pages">
+          <span id="page-label"></span>
+          <div>
+            <button id="previous" class="button secondary small" type="button">Previous</button>
+            <button id="next" class="button secondary small" type="button">Next</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar" aria-label="Reconciliation tools">
+        <section class="panel breakdown" aria-labelledby="breakdown-title">
+          <h2 id="breakdown-title">Record breakdown</h2>
+          <div id="status-bar" class="status-bar" aria-hidden="true"></div>
+          <ul id="legend" class="legend"></ul>
+        </section>
+
+        <section id="sources" class="panel sources" aria-labelledby="sources-title">
+          <h2 id="sources-title">Data sources</h2>
+          <p>Try another pair of CSVs. Files stay in your browser.</p>
+          <form id="import-form">
+            <label class="file-input">
+              <span>Website CSV</span>
+              <input type="file" id="website-file" accept=".csv,text/csv">
+            </label>
+            <label class="file-input">
+              <span>CRM CSV</span>
+              <input type="file" id="crm-file" accept=".csv,text/csv">
+            </label>
+            <button class="button run" type="submit">Run reconciliation</button>
+            <p id="import-message" class="import-message" role="status" hidden></p>
+          </form>
+          <div class="source-links">
+            <button class="text-button" id="reset" type="button">Reset sample</button>
+            <button class="text-button" id="download-web" type="button">Website sample</button>
+            <button class="text-button" id="download-crm" type="button">CRM sample</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="shell footer">
+    <span>Independent demo using fictional dealership records.</span>
+    <a href="#overview">Back to overview</a>
+  </footer>
+
+  <dialog id="detail-dialog" aria-labelledby="detail-title">
+    <div class="dialog-heading">
+      <div>
+        <p id="detail-id" class="lead-id"></p>
+        <h2 id="detail-title"></h2>
+      </div>
+      <button id="close-detail" class="button secondary small" type="button" autofocus>Close</button>
+    </div>
+    <div id="detail-body"></div>
+  </dialog>
+</body>
+</html>
