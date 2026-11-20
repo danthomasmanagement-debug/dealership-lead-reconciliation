@@ -255,18 +255,50 @@ tbody tr:hover { background: #f7faf7; }
 .follow-controls { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-top: .85rem; }
 .follow-controls label { display: grid; gap: .26rem; font-size: .8rem; font-weight: 700; }
 .follow-controls select { min-width: 0; padding: .48rem; color: var(--ink); border: 1px solid var(--border); border-radius: .42rem; background: #fff; }
-.vehicle-matches, .reply { margin-top: .75rem; }
-.vehicle-matches h3, .conversation-message h3, .scoreboard h3 { margin: 0; font-size: .94rem; }
-.conversation-message { background: #f6f7f2; border-radius: .56rem; padding: .68rem .76rem; }
-.conversation-message p { color: #3e5548; margin: .38rem 0 0; font-size: .9rem; line-height: 1.4; }
-.intent-note { display: flex; gap: .47rem; align-items: center; margin-top: .48rem; color: var(--muted); font-size: .8rem; }
+.message-thread {
+  border: 1px solid #d9e2d8; border-radius: .85rem;
+  background: linear-gradient(145deg, #f7f8f4, #eef4ed);
+}
+.thread-header {
+  display: flex; align-items: center; gap: .65rem; padding: .66rem .82rem;
+  border-bottom: 1px solid #dce5da; background: #fff; border-radius: .8rem .8rem 0 0;
+}
+.thread-avatar {
+  display: grid; place-items: center; width: 2.2rem; height: 2.2rem; flex: 0 0 auto;
+  border-radius: 50%; background: #e0eee1; color: #265843; font-size: .76rem; font-weight: 800;
+}
+.thread-header h3 { margin: 0; font-size: .94rem; line-height: 1.2; }
+.thread-header p { margin: .12rem 0 0; font-size: .75rem; color: var(--muted); }
+.thread-messages { display: grid; gap: .75rem; padding: .8rem; }
+.message { width: fit-content; max-width: min(90%, 28rem); min-width: 0; }
+.message.outgoing { margin-inline-start: auto; }
+.message-meta, .message-status { margin: 0 .2rem; font-size: .73rem; color: var(--muted); }
+.message-meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: .15rem .5rem; }
+.message-meta strong { color: #30493b; font-weight: 740; }
+.message-status { margin-top: .26rem; }
+.message.outgoing .message-meta { justify-content: end; text-align: right; }
+.message.outgoing .message-status { text-align: right; }
+.message-text {
+  margin: .22rem 0 0; padding: .59rem .73rem; line-height: 1.43;
+  font-size: .89rem; overflow-wrap: anywhere;
+}
+.message.incoming .message-text {
+  background: #fff; color: var(--ink); border: 1px solid #dce3d8;
+  border-radius: .2rem .82rem .82rem .82rem;
+}
+.message.outgoing .message-text {
+  background: #215641; color: #fff; border-radius: .82rem .2rem .82rem .82rem;
+}
+.draft-label { padding: .08rem .38rem; border: 1px solid #ccdbc9; border-radius: 1rem; }
+.vehicle-matches { margin-top: .75rem; }
+.vehicle-matches h3, .scoreboard h3 { margin: 0; font-size: .94rem; }
+.intent-note { display: flex; gap: .47rem; align-items: center; margin-top: .55rem; color: var(--muted); font-size: .8rem; }
 .intent-note strong { flex-shrink: 0; background: #e5ece9; color: #385849; border-radius: 2rem; padding: .22rem .5rem; }
 .intent-note strong.hot { background: #f8dfc8; color: #7a3f1f; }
 .vehicle-matches ul { padding: 0; margin: .36rem 0 0; list-style: none; border-top: 1px solid var(--border); }
 .vehicle-matches li { display: flex; justify-content: space-between; gap: .5rem; padding: .45rem 0; border-bottom: 1px solid var(--border); font-size: .87rem; }
 .vehicle-matches li span { display: block; font-size: .74rem; color: var(--muted); }
 .vehicle-price { text-align: right; }
-.reply { background: #edf3ea; }
 .consent-control { display: flex; gap: .45rem; align-items: center; margin: .75rem 0 0; font-size: .88rem; font-weight: 700; }
 .consent-control input { width: 1rem; height: 1rem; accent-color: var(--accent); }
 .event-log { padding: 0; margin: .78rem 0 0 .27rem; list-style: none; }
@@ -277,7 +309,7 @@ tbody tr:hover { background: #f7faf7; }
 .event-log li span { display: block; margin-top: .11rem; color: var(--muted); font-size: .77rem; }
 .queued-reply { margin-top: .75rem; color: var(--muted); font-size: .84rem; }
 .queued-reply summary { width: fit-content; cursor: pointer; color: var(--ink); font-weight: 680; }
-.queued-reply p { margin: .4rem 0 0; line-height: 1.4; }
+.queued-reply .message { margin-top: .48rem; }
 .scoreboard {
   margin-top: .85rem; padding: .7rem .82rem; border-radius: .52rem;
   color: #e7f1e9; background: linear-gradient(115deg, #183c31, #275744);
@@ -333,4 +365,6 @@ tbody tr:hover { background: #f7faf7; }
 
 @media (max-width: 22rem) {
   .follow-controls { grid-template-columns: 1fr; }
+  .thread-messages { padding: .65rem; }
+  .message { max-width: 96%; }
 }

@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#f7f6ef">
   <title>Lead Check | Dealership inquiry demo</title>
   <link rel="preload" href="instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
   <script defer src="reconcile.js?v=5"></script>
   <script defer src="sample-data.js?v=5"></script>
   <script defer src="demo-journey.js?v=5"></script>
-  <script defer src="app.js?v=5"></script>
+  <script defer src="app.js?v=6"></script>
 </head>
 <body>
   <header class="site-header">
@@ -66,15 +66,30 @@
             </div>
           </div>
           <div id="follow-up-view" hidden>
-            <div class="conversation">
-              <section class="conversation-message">
-                <h3>Maya’s message</h3>
-                <p id="buyer-message"></p>
-              </section>
-              <div class="intent-note" aria-live="polite">
-                <strong id="intent-level"></strong>
-                <span id="intent-reason"></span>
+            <section class="message-thread" aria-labelledby="thread-title" aria-describedby="thread-channel">
+              <header class="thread-header">
+                <span class="thread-avatar" aria-hidden="true">MP</span>
+                <div>
+                  <h3 id="thread-title">Maya Patel</h3>
+                  <p id="thread-channel">Text message preview</p>
+                </div>
+              </header>
+              <div class="thread-messages">
+                <div class="message incoming">
+                  <p class="message-meta"><strong>Maya</strong><time id="message-time"></time></p>
+                  <p class="message-text" id="buyer-message"></p>
+                  <p class="message-status">Website inquiry</p>
+                </div>
+                <div class="message outgoing">
+                  <p class="message-meta"><strong>Riverbend Motors</strong></p>
+                  <p class="message-text" id="reply-message"></p>
+                  <p class="message-status"><span class="draft-label">Draft</span></p>
+                </div>
               </div>
+            </section>
+            <div class="intent-note" aria-live="polite">
+              <strong id="intent-level"></strong>
+              <span id="intent-reason"></span>
             </div>
             <div class="follow-controls">
               <label>Buyer’s budget
@@ -95,10 +110,6 @@
               <h3>Matching cars</h3>
               <ul id="vehicle-list"></ul>
             </section>
-            <section class="conversation-message reply">
-              <h3>Draft reply</h3>
-              <p id="reply-message"></p>
-            </section>
             <label class="consent-control"><input id="buyer-consent" type="checkbox" checked> Buyer opted in to follow-up</label>
             <div role="status"><p id="follow-up-status" class="case-note" hidden></p></div>
             <div class="story-actions">
@@ -114,7 +125,11 @@
             </ol>
             <details class="queued-reply">
               <summary>View queued reply</summary>
-              <p id="queued-reply-text"></p>
+              <div class="message outgoing">
+                <p class="message-meta"><strong>Riverbend Motors</strong></p>
+                <p class="message-text" id="queued-reply-text"></p>
+                <p class="message-status">Queued in demo</p>
+              </div>
             </details>
             <section class="scoreboard" aria-labelledby="score-title" id="scoreboard" hidden>
               <h3 id="score-title">Agent scoreboard</h3>

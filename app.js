@@ -290,7 +290,7 @@
     timingInput.value = "soon";
     consentInput.checked = true;
     while (eventLog.children.length > 2) eventLog.lastElementChild.remove();
-    byId("queued-reply-text").parentElement.open = false;
+    byId("queued-reply-text").closest("details").open = false;
     showStoryStep(0, false);
   }
 
@@ -419,8 +419,10 @@
   });
 
   setText("case-id", sampleInquiry.lead_id);
-  byId("website-time").dateTime = sampleInquiry.submitted_at;
-  setText("website-time", receivedTime);
+  for (const id of ["website-time", "message-time"]) {
+    byId(id).dateTime = sampleInquiry.submitted_at;
+    setText(id, receivedTime);
+  }
   setText("received-event", receivedTime + " · " + sampleInquiry.lead_id);
   createLegend();
   replaceDataset(sample.website, sample.crm, "Sample data");
