@@ -3,26 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Compare dealership website leads with CRM records and investigate the gaps.">
-  <meta name="theme-color" content="#0c1e20">
-  <title>Lead Reconciliation | Interactive demo</title>
-  <link rel="preload" href="showroom.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=2">
+  <meta name="description" content="See why a dealership inquiry went missing and try a safe recovery using sample data.">
+  <meta name="theme-color" content="#f7f6ef">
+  <title>Lead Check | Dealership inquiry demo</title>
+  <link rel="preload" href="instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css?v=3">
   <script defer src="reconcile.js"></script>
   <script defer src="sample-data.js"></script>
-  <script defer src="app.js?v=2"></script>
+  <script defer src="demo-journey.js"></script>
+  <script defer src="app.js?v=3"></script>
 </head>
 <body>
   <header class="site-header">
     <div class="shell header-inner">
       <a class="brand" href="#overview">
-        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-        Lead Reconciliation
+        <span class="brand-mark" aria-hidden="true"></span>
+        Lead Check
       </a>
       <nav aria-label="Page sections">
-        <a href="#overview">Overview</a>
-        <a href="#records">Records</a>
-        <a href="#sources">Data sources</a>
+        <a href="#records">Inquiry records</a>
+        <a href="#sources">Try your own files</a>
       </nav>
       <span id="dataset-label" class="dataset-label">Sample data</span>
     </div>
@@ -30,51 +30,45 @@
 
   <main class="shell">
     <section id="overview" class="hero" aria-labelledby="title">
-      <div class="hero-image" aria-hidden="true"></div>
       <div class="hero-copy">
-        <h1 id="title">Find the leads<br class="hero-break"> your CRM missed.</h1>
-        <p>Compare dealership website inquiries with CRM records to spot missing leads, duplicates, and data mismatches.</p>
+        <p class="eyebrow">Dealership inquiry demo</p>
+        <h1 id="title">Maya asked about a car. <em>Her inquiry went missing.</em></h1>
+        <p>The website received her message. The sales system had no record of it. See how a simple check finds the gap and tests a recovery.</p>
         <div class="hero-actions">
-          <a class="button primary" id="review-exceptions" href="#records">Explore the demo</a>
-          <button class="button hero-secondary" type="button" id="sample-example">Inspect a sample lead</button>
+          <button class="button primary" type="button" id="sample-example">See what happened</button>
+          <a class="quiet-link" id="review-exceptions" href="#records">View all inquiries</a>
         </div>
+        <p class="hero-note">Fictional data. No sign-in required.</p>
       </div>
-      <div class="flow" aria-label="Reconciliation data flow">
-        <div class="flow-node flow-source">
-          <span class="flow-icon" aria-hidden="true">W</span>
-          <div><strong>Website intake</strong><small id="web-count">0 records</small></div>
-        </div>
-        <div class="flow-node flow-source">
-          <span class="flow-icon" aria-hidden="true">C</span>
-          <div><strong>CRM export</strong><small id="crm-count">0 records</small></div>
-        </div>
-        <div class="flow-node flow-result">
-          <span class="flow-icon" aria-hidden="true">✓</span>
-          <div><strong>Reconciled leads</strong><small id="union-count">0 unique IDs</small></div>
-        </div>
-      </div>
+      <figure class="hero-visual">
+        <img src="showroom.webp" alt="" width="1536" height="1024" fetchpriority="high">
+        <figcaption class="hero-case">
+          <div><span>Website form</span><strong>Inquiry received</strong></div>
+          <div><span>Sales system</span><strong id="hero-sales-state">No record found</strong></div>
+        </figcaption>
+      </figure>
     </section>
 
     <section class="metrics" aria-label="Reconciliation summary">
       <article class="metric">
-        <p>Match rate</p>
-        <strong id="match-rate">—</strong>
-        <span id="match-rate-caption">of website leads</span>
+        <p>Missing inquiries</p>
+        <strong id="missing-count">0</strong>
+        <span>Website inquiries with no sales record</span>
       </article>
       <article class="metric">
         <p>Matched</p>
         <strong id="matched-count">0</strong>
-        <span>Same details in both sources</span>
+        <span>Same details in both systems</span>
       </article>
       <article class="metric">
         <p>Needs review</p>
         <strong id="exception-count">0</strong>
-        <span>Unique lead IDs with issues</span>
+        <span>Distinct inquiries with an issue</span>
       </article>
       <article class="metric">
-        <p>Missing from CRM</p>
-        <strong id="missing-count">0</strong>
-        <span>Website leads with no CRM record</span>
+        <p>Match rate</p>
+        <strong id="match-rate">—</strong>
+        <span id="match-rate-caption">of website inquiries</span>
       </article>
     </section>
 
@@ -82,29 +76,29 @@
       <section id="records" class="panel records-panel" aria-labelledby="records-title">
         <div class="panel-heading">
           <div>
-            <h2 id="records-title">Lead records</h2>
+            <h2 id="records-title">What the check found</h2>
             <p id="table-caption" aria-live="polite">Loading sample records</p>
           </div>
           <button id="export" type="button" class="button secondary">
-            Export exceptions
+            Download follow-up list
           </button>
         </div>
         <div class="table-controls">
           <div class="segmented" aria-label="Filter lead records">
             <button type="button" data-filter="issues" aria-pressed="true">Needs review</button>
-            <button type="button" data-filter="all" aria-pressed="false">All leads</button>
+            <button type="button" data-filter="all" aria-pressed="false">All inquiries</button>
             <button type="button" data-filter="matched" aria-pressed="false">Matched</button>
           </div>
           <label class="search-field">
-            <span class="sr-only">Search lead records</span>
-            <input id="search" type="search" placeholder="Search leads">
+            <span class="sr-only">Search inquiries</span>
+            <input id="search" type="search" placeholder="Search inquiries">
           </label>
         </div>
         <div class="table-scroll">
           <table>
             <thead>
               <tr>
-                <th scope="col">Lead</th>
+                <th scope="col">Buyer</th>
                 <th scope="col">Dealership</th>
                 <th scope="col">Status</th>
                 <th scope="col"><span class="sr-only">Details</span></th>
@@ -124,30 +118,30 @@
 
       <aside class="sidebar" aria-label="Reconciliation tools">
         <section class="panel breakdown" aria-labelledby="breakdown-title">
-          <h2 id="breakdown-title">Record breakdown</h2>
+          <h2 id="breakdown-title">Types of issues</h2>
           <div id="status-bar" class="status-bar" aria-hidden="true"></div>
           <ul id="legend" class="legend"></ul>
         </section>
 
         <section id="sources" class="panel sources" aria-labelledby="sources-title">
-          <h2 id="sources-title">Data sources</h2>
-          <p>Try another pair of CSVs. Files stay in your browser.</p>
+          <h2 id="sources-title">Try your own files</h2>
+          <p>Choose two CSV files to compare. They stay in your browser.</p>
           <form id="import-form">
             <label class="file-input">
               <span>Website CSV</span>
               <input type="file" id="website-file" accept=".csv,text/csv">
             </label>
             <label class="file-input">
-              <span>CRM CSV</span>
+              <span>Sales system CSV</span>
               <input type="file" id="crm-file" accept=".csv,text/csv">
             </label>
-            <button class="button run" type="submit">Run reconciliation</button>
+            <button class="button run" type="submit">Compare files</button>
             <p id="import-message" class="import-message" role="status" hidden></p>
           </form>
           <div class="source-links">
             <button class="text-button" id="reset" type="button">Reset sample</button>
             <button class="text-button" id="download-web" type="button">Website sample</button>
-            <button class="text-button" id="download-crm" type="button">CRM sample</button>
+            <button class="text-button" id="download-crm" type="button">Sales system sample</button>
           </div>
         </section>
       </aside>
@@ -155,9 +149,96 @@
   </main>
 
   <footer class="shell footer">
-    <span>Independent demo using fictional dealership records.</span>
+    <span>Independent demo with fictional dealership records.</span>
     <a href="#overview">Back to overview</a>
   </footer>
+
+  <dialog id="story-dialog" aria-labelledby="story-title">
+    <div class="dialog-heading">
+      <div>
+        <p class="eyebrow">Sample inquiry</p>
+        <h2 id="story-title">What happened to Maya’s message?</h2>
+      </div>
+      <button id="close-story" class="button secondary small" type="button" autofocus>Close</button>
+    </div>
+    <div id="story-trace-view">
+      <p id="story-summary" class="detail-note"></p>
+      <div class="story-trace">
+        <section class="story-step">
+          <p>Dealership website</p>
+          <h3>Inquiry received</h3>
+          <span id="story-web"></span>
+        </section>
+        <section class="story-step" id="story-sales">
+          <p>Sales system</p>
+          <h3 id="story-sales-title"></h3>
+          <span id="story-sales-detail"></span>
+        </section>
+      </div>
+      <section class="story-receipt" id="story-receipt" aria-live="polite" hidden>
+        <h3 id="receipt-title"></h3>
+        <p id="receipt-detail"></p>
+      </section>
+      <div class="story-actions">
+        <button id="run-test" class="button primary" type="button">Try sending it again</button>
+        <button id="show-follow-up" class="button primary" type="button" hidden>Preview a follow-up</button>
+        <button id="story-records" class="text-button" type="button">View all inquiries</button>
+      </div>
+    </div>
+    <div id="follow-up-view" hidden>
+      <p class="detail-note">Match Maya’s needs to available cars and preview a reply that the sales team can review.</p>
+      <div class="follow-controls">
+        <label>Buyer’s budget
+          <select id="buyer-budget">
+            <option value="28000">Under $28,000</option>
+            <option value="32000" selected>Under $32,000</option>
+            <option value="36000">Under $36,000</option>
+          </select>
+        </label>
+        <label>Buyer’s timeline
+          <select id="buyer-timing">
+            <option value="soon">Ready to visit</option>
+            <option value="exploring">Just browsing</option>
+          </select>
+        </label>
+      </div>
+      <div class="conversation">
+        <section class="conversation-message">
+          <h3>Maya’s inquiry</h3>
+          <p id="buyer-message"></p>
+        </section>
+        <div class="intent-note">
+          <strong id="intent-level"></strong>
+          <span id="intent-reason"></span>
+        </div>
+      </div>
+      <section class="vehicle-matches">
+        <h3>Matching cars</h3>
+        <ul id="vehicle-list"></ul>
+      </section>
+      <section class="conversation-message reply">
+        <h3>Example reply</h3>
+        <p id="reply-message"></p>
+      </section>
+      <label class="consent-control"><input id="buyer-consent" type="checkbox" checked> Buyer opted in to follow-up</label>
+      <p id="follow-up-status" class="story-note" role="status"></p>
+      <div class="story-actions">
+        <button id="queue-follow-up" class="button primary" type="button">Queue demo follow-up</button>
+        <button id="close-deal" class="button secondary" type="button" hidden>Mark demo deal won</button>
+        <button id="back-to-trace" class="text-button" type="button">Back to the inquiry</button>
+        <button id="restart-story" class="text-button" type="button" hidden>Start over</button>
+      </div>
+      <section class="scoreboard" aria-labelledby="score-title">
+        <h3 id="score-title">Agent scoreboard</h3>
+        <div>
+          <span><strong id="score-recovered">0</strong> Inquiry recovered</span>
+          <span><strong id="score-follow-up">0</strong> Follow-up queued</span>
+          <span><strong id="score-won">0</strong> Deal marked won</span>
+        </div>
+      </section>
+    </div>
+    <p class="story-note">This example runs on fictional data. Recovery, message delivery, and sale are simulated.</p>
+  </dialog>
 
   <dialog id="detail-dialog" aria-labelledby="detail-title">
     <div class="dialog-heading">

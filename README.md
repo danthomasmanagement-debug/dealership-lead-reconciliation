@@ -1,15 +1,17 @@
-# Dealership lead reconciliation
+# Lead Check
 
-A website lead can look successful to the customer and still fail to reach the dealership CRM. This demo compares exports from both systems and shows the specific records that need a closer look.
+A buyer sends a message through the dealership website. The inquiry can still be absent from the sales team’s system. Lead Check makes that gap visible and lets a visitor walk through a simulated recovery and follow-up.
 
 ## Try the browser demo
 
 [Try the interactive demo](https://danthomasmanagement-debug.github.io/dealership-lead-reconciliation/) or open **index.html** locally. The dashboard starts with fictional dealership records and runs entirely in the browser. It needs no account, API key, installation, or network connection when opened locally.
 
-1. Select **Inspect a sample lead** to open **LD-1005** and compare the stock IDs in the two sources.
-2. Open **Details** on **LD-1002** to see a website lead that is missing from the CRM.
-3. Choose **All leads** or search by lead ID, customer, dealership, or stock ID.
-4. Export the exception queue as a CSV. To try different data, download the two samples, edit a few rows, and import both files under **Data sources**.
+1. Select **See what happened** to compare the website and sales records for Maya’s inquiry.
+2. Select **Try sending it again** to recover the sample inquiry. **Test again** shows how the check avoids adding a second record.
+3. Select **Preview a follow-up** and change Maya’s budget or visit timeline. The example conversation, intent badge, vehicle matches, and draft reply update together.
+4. Toggle the buyer’s opt-in to see when the reply can be queued. Queue it in the demo, then mark the sample deal won to update the agent scoreboard.
+
+For the full comparison, choose **View all inquiries**. Search by lead ID, buyer, dealership, or stock ID, and download a CSV follow-up list. Under **Try your own files**, use the sample CSVs as templates and compare two exports locally.
 
 The built-in sample contains **31 distinct lead IDs**, **23 exact matches**, and **8 to review**. The match rate uses unique website leads as its denominator.
 
@@ -25,13 +27,17 @@ Both inputs use these headers, in any order.
 
 Lead IDs are matched case-insensitively. The comparison trims whitespace and ignores case in the other fields. Use a common timestamp format in both exports. Duplicate IDs, records present in only one source, and missing or conflicting values appear in the report. A record with more than one issue appears once, with details preserved in its notes.
 
-The demo does not infer matches across different IDs or write changes back to either source. In a production integration, an agreed cross-system ID, persistence, scheduling, and monitored retries would belong in the integration design.
+The browser simulation uses a shared inquiry ID, checks the destination before inserting, and keeps the recovery and follow-up states in the page. The consent toggle gates the demo queue. The intent label uses visible signals from the fictional inquiry, and vehicle matches are filtered by budget, SUV body type, and all-wheel drive. Inventory, messaging, and the marked-won outcome are simulated.
+
+For production, an integration needs authenticated access to the actual website and sales system, a reliable cross-system identifier, persisted workflow state, real consent records, monitored retries, and an audit trail.
 
 All built-in people, dealerships, and records are fictional.
 
 ## Visual design
 
-The typography, spacing, and clear action hierarchy were informed by a review of the [Apple homepage](https://www.apple.com/). The original showroom image is stored as **showroom.webp** and was created with built-in ImageGen.
+The typography, spacing, and clear action hierarchy were informed by the [Apple homepage](https://www.apple.com/) and a Claude design critique of a fictional brief. The original showroom image is stored as **showroom.webp** and was created with built-in ImageGen. The locally hosted typefaces are DM Sans and Instrument Serif. Their SIL Open Font Licenses are included.
+
+The walkthrough was informed by public Foureyes material on [checking for and recovering missing inquiries](https://support.foureyes.io/en/articles/9397753-why-does-foureyes-recover-a-lead), [routing recovered inquiries](https://support.foureyes.io/en/articles/6571485-how-can-i-make-sure-recovered-prospects-are-routed-correctly-in-my-crm), and [inventory-based follow-up](https://www.foureyes.io/case-studies/why-audi-bellevue-stuck-with-foureyes). This project is a standalone demonstration.
 
 <details>
 <summary>Image generation prompt</summary>
