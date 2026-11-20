@@ -10,13 +10,36 @@
   ];
   const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+  function normalizeKey(value) {
+    return value.trim().toUpperCase();
+  }
+
   function recover(inquiry, salesRecords) {
-    const id = inquiry.lead_id.trim().toUpperCase();
-    const alreadyPresent = salesRecords.some((row) => row.lead_id.trim().toUpperCase() === id);
+    const id = normalizeKey(inquiry.lead_id);
+    const alreadyPresent = salesRecords.some((row) => normalizeKey(row.lead_id) === id);
     return {
       records: alreadyPresent ? salesRecords : [...salesRecords, { ...inquiry }],
       added: !alreadyPresent
     };
+  }
+
+  function correctRouting(inquiry, salesRecords, dealership) {
+    const destination = normalizeKey(inquiry.dealership);
+    if (!destination || typeof dealership !== "string" || normalizeKey(dealership) !== destination) {
+      return { records: salesRecords, status: "wrong-destination" };
+    }
+
+    const inquiryId = normalizeKey(inquiry.lead_id);
+    const matchingRecords = salesRecords.filter((row) => normalizeKey(row.lead_id) === inquiryId);
+    if (matchingRecords.length === 0) return { records: salesRecords, status: "missing" };
+    if (matchingRecords.length > 1) return { records: salesRecords, status: "duplicate" };
+
+    const [salesRecord] = matchingRecords;
+    if (normalizeKey(salesRecord.dealership) === destination) {
+      return { records: salesRecords, status: "unchanged" };
+    }
+    const records = salesRecords.map((row) => row === salesRecord ? { ...row, dealership: inquiry.dealership } : row);
+    return { records, status: "corrected" };
   }
 
   function plan(inquiry, budget, timing, preferredStock) {
@@ -53,7 +76,7 @@
     };
   }
 
-  const api = { recover, plan, dollars };
+  const api = { recover, correctRouting, plan, dollars };
   if (typeof module === "object" && module.exports) module.exports = api;
   else scope.LeadDemoJourney = api;
 })(globalThis);

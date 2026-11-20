@@ -15,6 +15,9 @@
   const traceSources = Array.from(document.querySelectorAll("[data-trace]"));
   const navigation = Array.from(document.querySelectorAll("[data-view-link]"));
   const eventLog = byId("event-log");
+  const routingEvents = byId("routing-events");
+  const caseEvents = { recovery: [], routing: [] };
+  const routingDestination = byId("routing-destination");
   const importForm = byId("import-form");
   const importButton = importForm.querySelector("button[type='submit']");
   const searchInput = byId("search");
@@ -31,12 +34,12 @@
     matched: "The sales team can use this record for follow-up."
   };
   const sampleInquiry = sample.website.find((row) => row.lead_id === "LD-1002");
+  const routingInquiry = sample.website.find((row) => row.lead_id === "LD-1024");
+  const originalRouting = sample.crm.find((row) => row.lead_id === routingInquiry.lead_id).dealership;
+  const originalPlan = journey.plan(sampleInquiry, 32000, "soon");
   const receivedTime = new Intl.DateTimeFormat("en-US", {
     hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles"
   }).format(new Date(sampleInquiry.submitted_at)) + " PT";
-  const actionTime = new Intl.DateTimeFormat("en-US", {
-    hour: "numeric", minute: "2-digit", second: "2-digit", timeZone: "America/Los_Angeles"
-  });
   const profileTime = new Intl.DateTimeFormat("en-US", {
     month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
     timeZone: "America/Los_Angeles"
@@ -46,9 +49,8 @@
   const consentInput = byId("buyer-consent");
   let demoSales = sample.crm;
   let usingSample = true;
-  let lastRecovery = null;
+  let recoveryProof = null;
   let recoveryAttempts = 0;
-  let recoveryDelta = "";
   let followUpQueued = false;
   let dealWon = false;
   let selectedStock = "";
@@ -71,37 +73,45 @@
     byId(id).textContent = value;
   }
 
-  function logAction(title, detail) {
+  function logAction(title, detail, caseType = "recovery") {
     const stamp = new Date();
-    const date = element("time", "", actionTime.format(stamp) + " PT");
+    const date = element("time", "", profileTime.format(stamp) + " PT");
     date.dateTime = stamp.toISOString();
+    caseEvents[caseType].push({ title, detail, timestamp: date.dateTime });
     const item = element("li");
     const metadata = element("span", "", detail + " · ");
     metadata.append(date);
     item.append(element("strong", "", title), metadata);
-    eventLog.append(item);
+    (caseType === "routing" ? routingEvents : eventLog).append(item);
+  }
+
+  function clearCaseEvents(caseType, list, initialRows) {
+    caseEvents[caseType].length = 0;
+    while (list.children.length > initialRows) list.lastElementChild.remove();
   }
 
   function currentDatasetLabel() {
-    if (activeView === "demo") return "Fictional case";
+    if (activeView === "demo" || activeView === "routing") return "Fictional case";
     return activeView === "records" ? recordsLabel : "Sample data";
   }
 
   function renderView(moveFocus) {
     const hash = window.location.hash;
     const sources = hash === "#sources";
-    activeView = hash === "#demo" ? "demo" : hash === "#records" || sources ? "records" : "overview";
+    activeView = hash === "#demo" ? "demo" : hash === "#routing" ? "routing" :
+      hash === "#records" || sources ? "records" : "overview";
     byId("overview").hidden = activeView !== "overview";
     byId("demo-view").hidden = activeView !== "demo";
+    byId("routing-view").hidden = activeView !== "routing";
     byId("records-view").hidden = activeView !== "records";
-    setText("start-demo", lastRecovery === null ? "Start demo" : "Resume demo");
+    setText("start-demo", recoveryProof === null ? "Start demo" : "Resume demo");
     setText("dataset-label", currentDatasetLabel());
     for (const link of navigation) {
-      link.setAttribute("aria-current", link.dataset.viewLink === activeView ? "page" : "false");
+      link.setAttribute("aria-current", link.dataset.viewLink === (activeView === "routing" ? "demo" : activeView) ? "page" : "false");
     }
     if (dialog.open) dialog.close();
     if (moveFocus) {
-      const headingId = activeView === "demo" ? "demo-title" :
+      const headingId = activeView === "demo" ? "demo-title" : activeView === "routing" ? "routing-title" :
         activeView === "records" ? sources ? "sources-title" : "records-title" : "title";
       byId(headingId).focus({ preventScroll: true });
     }
@@ -114,7 +124,7 @@
     for (const button of landingSources) {
       button.setAttribute("aria-pressed", String(button.dataset.previewSource === source));
     }
-    setText("landing-evidence-title", website ? "The website captured her request" : "The sales team never saw it");
+    setText("landing-evidence-title", website ? "The website captured her request" : "The sales system has no matching inquiry");
     setText("landing-evidence-detail", website
       ? sampleInquiry.customer + " asked about stock " + sampleInquiry.vehicle + " at " + receivedTime + "."
       : "The sales system had no record for inquiry " + sampleInquiry.lead_id + ".");
@@ -308,15 +318,14 @@
     const sampleNotes = sampleContext ? sample.buyerNotes[row.id] : undefined;
     if (maya || sampleNotes) {
       const notes = element("section", "profile-context");
-      const plan = maya ? journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value) : null;
       const buyer = maya ? {
         needs: "All-wheel-drive SUV",
-        budget: "Under " + journey.dollars.format(Number(budgetInput.value)),
-        timing: timingInput.value === "soon" ? "Ready to visit this weekend" : "Still browsing",
-        message: plan.buyerMessage
+        budget: "Under $32,000",
+        timing: "Ready to visit this weekend",
+        message: originalPlan.buyerMessage
       } : sampleNotes;
       const facts = [["Looking for", buyer.needs], ["Budget", buyer.budget], ["Timeline", buyer.timing]];
-      if (maya) facts.push(["Text follow-up", consentInput.checked ? "Opted in" : "Awaiting opt-in"]);
+      if (maya) facts.push(["Demo text consent", consentInput.checked ? "Opted in" : "Awaiting opt-in"]);
       notes.append(element("h3", "", "Sample buyer notes"), profileFacts(facts),
         element("blockquote", "", buyer.message));
       if (maya && activeView !== "demo") {
@@ -342,8 +351,25 @@
     setFilter("issues");
   }
 
+  function syncSampleRecords(nextResult) {
+    if (!usingSample) return;
+    result = nextResult;
+    renderSummary("Sample data · corrections applied");
+    renderTable();
+  }
+
+  function recoveryImpact() {
+    const proof = recoveryProof;
+    return proof.missingBefore + " → " + proof.missingAfter + " missing inquiries. " +
+      proof.matchedBefore + " → " + proof.matchedAfter + " of " + proof.websiteTotal + " matched.";
+  }
+
+  function salesRecordCount(total) {
+    return total + (total === 1 ? " sales record" : " sales records");
+  }
+
   function updateTrace() {
-    const recovered = lastRecovery !== null;
+    const recovered = recoveryProof !== null;
     setText("story-sales-title", recovered ? "Recovered" : "No record found");
     byId("story-sales").classList.toggle("recovered", recovered);
     for (const button of traceSources) {
@@ -353,12 +379,16 @@
       ? sampleInquiry.customer + " asked about stock " + sampleInquiry.vehicle + " at " + receivedTime + "."
       : recovered ? "Found " + sampleInquiry.lead_id + " in the sample sales system."
         : "Search for " + sampleInquiry.lead_id + " returned no matching sales record.");
-    byId("story-receipt").hidden = !recovered;
+    byId("recovery-proof").hidden = !recovered;
+    byId("retry-receipt").hidden = recoveryAttempts < 2;
     if (recovered) {
-      setText("receipt-title", lastRecovery ? "One sales record added" : "Duplicate prevented · attempt " + recoveryAttempts);
-      setText("receipt-detail", lastRecovery
-        ? recoveryDelta + " The sample sales system now has " + sampleInquiry.lead_id + "."
-        : sampleInquiry.lead_id + " was already there. The test added zero records.");
+      setText("proof-before", salesRecordCount(recoveryProof.salesBefore));
+      setText("proof-after", salesRecordCount(recoveryProof.salesAfter));
+      setText("proof-impact", recoveryImpact());
+      if (recoveryAttempts > 1) {
+        setText("retry-receipt", "Retry " + (recoveryAttempts - 1) + ": 0 records added. " +
+          salesRecordCount(recoveryProof.salesAfter) + " remains for " + sampleInquiry.lead_id + ".");
+      }
     }
     byId("show-follow-up").hidden = !recovered;
     setText("show-follow-up", followUpQueued ? "Review follow-up" : "Preview follow-up");
@@ -375,7 +405,7 @@
   function updateFollowUp() {
     const plan = currentPlan();
     if (plan.recommended?.stock !== selectedStock) selectedStock = "";
-    setText("buyer-message", plan.buyerMessage);
+    setText("buyer-message", originalPlan.buyerMessage);
     setText("intent-level", plan.intent);
     setText("intent-reason", plan.reason);
     byId("intent-level").classList.toggle("hot", timingInput.value === "soon");
@@ -401,6 +431,7 @@
     byId("vehicle-list").replaceChildren(...matches);
     setText("reply-message", plan.reply);
     setText("reply-state", followUpQueued ? "Queued in demo" : "Draft");
+    byId("what-if-note").hidden = followUpQueued;
     for (const input of [budgetInput, timingInput, consentInput]) input.disabled = followUpQueued;
     byId("queue-follow-up").hidden = followUpQueued;
     byId("review-outcome").hidden = !followUpQueued;
@@ -410,9 +441,9 @@
   }
 
   function updateOutcome() {
-    setText("outcome-summary", dealWon
-      ? "Maya’s recovered inquiry became a sale in this example."
-      : "The draft is saved in the demo queue. You can now record the sample sales outcome.");
+    setText("handoff-summary", sampleInquiry.lead_id + " is verified in the sales system. " +
+      "Buyer opt-in confirmed. " + (queuedCar ? "Draft queued with stock " + queuedCar.stock + "." :
+        "An inventory update is queued."));
     byId("scoreboard").hidden = !dealWon;
     if (dealWon) showScoreProof(0);
     byId("close-deal").hidden = dealWon;
@@ -423,7 +454,7 @@
     const retries = recoveryAttempts - 1;
     const retryDetail = retries > 0 ? " Skipped " + retries + (retries === 1 ? " duplicate retry." : " duplicate retries.") : "";
     const details = [
-      recoveryDelta + retryDetail,
+      recoveryImpact() + retryDetail,
       queuedCar ? queuedCar.model + " · Stock " + queuedCar.stock + " · " + journey.dollars.format(queuedCar.price) :
         "The draft offered an inventory availability update.",
       "Maya’s deal was marked won in this simulation."
@@ -438,7 +469,7 @@
     byId("story-trace-view").hidden = step !== 0;
     byId("follow-up-view").hidden = step !== 1;
     byId("outcome-view").hidden = step !== 2;
-    const completed = [lastRecovery !== null, followUpQueued, dealWon];
+    const completed = [recoveryProof !== null, followUpQueued, dealWon];
     for (const [index, item] of caseSteps.entries()) {
       const complete = completed[index];
       item.classList.toggle("complete", complete);
@@ -447,7 +478,7 @@
       item.setAttribute("aria-current", index === step ? "step" : "false");
       item.querySelector("button").disabled = index > 0 && !completed[index - 1];
     }
-    const titles = ["Maya Patel’s inquiry", "Help Maya find a car", dealWon ? "Deal won" : "Follow-up queued"];
+    const titles = ["Maya Patel’s inquiry", "Help Maya find a car", dealWon ? "Sample deal won" : "Handoff ready"];
     setText("story-title", titles[step]);
     [updateTrace, updateFollowUp, updateOutcome][step]();
     if (moveFocus) {
@@ -458,10 +489,8 @@
   }
 
   function resetJourney() {
-    demoSales = sample.crm;
-    lastRecovery = null;
+    recoveryProof = null;
     recoveryAttempts = 0;
-    recoveryDelta = "";
     followUpQueued = false;
     dealWon = false;
     selectedStock = "";
@@ -470,7 +499,7 @@
     budgetInput.value = "32000";
     timingInput.value = "soon";
     consentInput.checked = true;
-    while (eventLog.children.length > 2) eventLog.lastElementChild.remove();
+    clearCaseEvents("recovery", eventLog, 2);
     byId("queued-reply-text").closest("details").open = false;
     showStoryStep(0, false);
   }
@@ -482,8 +511,26 @@
     status.textContent = message;
   }
 
-  function downloadCsv(filename, csv) {
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  function routedDealership() {
+    return demoSales.find((row) => row.lead_id === routingInquiry.lead_id)?.dealership || "No sales record";
+  }
+
+  function renderRouting() {
+    const actual = routedDealership();
+    setText("routing-sales", actual);
+    setText("routing-apply", actual === routingInquiry.dealership ? "Test repeat correction" : "Apply routing correction");
+    byId("routing-apply").disabled = !routingDestination.value;
+    byId("routing-export").hidden = caseEvents.routing.length === 0;
+  }
+
+  function setRoutingMessage(message, status) {
+    const feedback = byId("routing-result");
+    feedback.textContent = message;
+    feedback.dataset.state = status;
+  }
+
+  function downloadFile(filename, content, type = "text/csv;charset=utf-8") {
+    const url = URL.createObjectURL(new Blob([content], { type }));
     const link = element("a");
     link.href = url;
     link.download = filename;
@@ -491,6 +538,38 @@
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function downloadCaseReport(caseType) {
+    const routing = caseType === "routing";
+    const inquiry = routing ? routingInquiry : sampleInquiry;
+    const lines = [
+      "Lead Check — " + (routing ? "Routing challenge" : "Recovery handoff"),
+      "Fictional simulation. All actions use sample data in this browser.",
+      "",
+      "Inquiry: " + inquiry.lead_id + " · " + inquiry.customer,
+      "Website inquiry received: " + inquiry.submitted_at + " (UTC)"
+    ];
+    if (routing) {
+      lines.push(
+        "Website dealership: " + routingInquiry.dealership,
+        "Sales system before: " + originalRouting,
+        "Sales system now: " + routedDealership()
+      );
+    } else {
+      lines.push(
+        "Sales records for this inquiry: " + recoveryProof.salesBefore + " → " + recoveryProof.salesAfter,
+        "Sample dataset impact: " + recoveryImpact(),
+        "Text consent: " + (followUpQueued ? "Confirmed" : "Follow-up not queued"),
+        "Draft: " + (followUpQueued ? byId("queued-reply-text").textContent : "Follow-up not queued"),
+        "Simulated sale: " + (dealWon ? "Marked won" : "No sale recorded")
+      );
+    }
+    lines.push("", "Simulation run activity (UTC)");
+    for (const event of caseEvents[caseType]) {
+      lines.push(event.timestamp + " | " + event.title + " | " + event.detail);
+    }
+    downloadFile("lead-check-" + inquiry.lead_id + ".txt", lines.join("\n") + "\n", "text/plain;charset=utf-8");
   }
 
   importForm.addEventListener("submit", async (event) => {
@@ -546,36 +625,49 @@
     const row = core.reconcile(sample.website, demoSales).rows.find((lead) => lead.id === sampleInquiry.lead_id);
     showDetails(row, true);
   });
-  byId("export").addEventListener("click", () => downloadCsv("lead-exceptions.csv", core.exceptionsCsv(result)));
-  byId("download-web").addEventListener("click", () => downloadCsv("website-leads.csv", core.createCsv(core.headers, sample.website)));
-  byId("download-crm").addEventListener("click", () => downloadCsv("crm-leads.csv", core.createCsv(core.headers, sample.crm)));
+  byId("export").addEventListener("click", () => downloadFile("lead-exceptions.csv", core.exceptionsCsv(result)));
+  byId("download-web").addEventListener("click", () => downloadFile("website-leads.csv", core.createCsv(core.headers, sample.website)));
+  byId("download-crm").addEventListener("click", () => downloadFile("crm-leads.csv", core.createCsv(core.headers, sample.crm)));
   byId("reset").addEventListener("click", () => {
     importForm.reset();
     usingSample = true;
+    demoSales = sample.crm;
     resetJourney();
+    clearCaseEvents("routing", routingEvents, 2);
+    routingDestination.value = "";
+    setRoutingMessage("Compare the two records before choosing a destination.", "working");
+    renderRouting();
     replaceDataset(sample.website, sample.crm, "Sample data");
     showImportMessage("Sample records restored.");
   });
   byId("run-test").addEventListener("click", () => {
+    const prior = demoSales;
     const recovery = journey.recover(sampleInquiry, demoSales);
     recoveryAttempts += 1;
-    lastRecovery = recovery.added;
     demoSales = recovery.records;
     if (recovery.added) {
-      const before = core.reconcile(sample.website, sample.crm).missingFromCrm;
+      const before = core.reconcile(sample.website, prior);
       const after = core.reconcile(sample.website, demoSales);
-      recoveryDelta = before + " → " + after.missingFromCrm + " missing inquiries.";
+      recoveryProof = {
+        salesBefore: before.rows.find((row) => row.id === sampleInquiry.lead_id).crm.length,
+        salesAfter: after.rows.find((row) => row.id === sampleInquiry.lead_id).crm.length,
+        missingBefore: before.missingFromCrm,
+        missingAfter: after.missingFromCrm,
+        matchedBefore: before.counts.matched,
+        matchedAfter: after.counts.matched,
+        websiteTotal: after.websiteUnique
+      };
       logAction("Recovery created one record", "Sales system · " + sampleInquiry.lead_id);
-      if (usingSample) {
-        result = after;
-        renderSummary("Sample data · recovery applied");
-        renderTable();
-      }
+      syncSampleRecords(after);
     } else {
       logAction("Retry " + (recoveryAttempts - 1) + " skipped", "Inquiry already present");
     }
     showStoryStep(0, false);
-    if (recovery.added) byId("show-follow-up").focus({ preventScroll: true });
+    if (recovery.added) {
+      const next = byId("show-follow-up");
+      next.focus({ preventScroll: true });
+      next.scrollIntoView({ block: "nearest" });
+    }
   });
   byId("show-follow-up").addEventListener("click", () => showStoryStep(1));
   byId("back-to-trace").addEventListener("click", () => showStoryStep(0));
@@ -602,7 +694,7 @@
     setText("reply-message", currentPlan().reply);
   });
   byId("queue-follow-up").addEventListener("click", () => {
-    if (!consentInput.checked || followUpQueued || lastRecovery === null) return;
+    if (!consentInput.checked || followUpQueued || recoveryProof === null) return;
     followUpQueued = true;
     const plan = currentPlan();
     queuedCar = plan.recommended;
@@ -619,20 +711,59 @@
     showStoryStep(2);
   });
   byId("restart-story").addEventListener("click", () => {
+    demoSales = demoSales.filter((row) => row.lead_id !== sampleInquiry.lead_id);
     resetJourney();
-    if (usingSample) replaceDataset(sample.website, sample.crm, "Sample data");
+    if (usingSample) replaceDataset(sample.website, demoSales,
+      routedDealership() === originalRouting ? "Sample data" : "Sample data · corrections applied");
     showStoryStep(0);
   });
 
+  routingDestination.addEventListener("change", renderRouting);
+  byId("routing-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const destination = routingDestination.value;
+    if (!destination) return;
+    const before = routedDealership();
+    const correction = journey.correctRouting(routingInquiry, demoSales, destination);
+    demoSales = correction.records;
+    const outcomes = {
+      corrected: ["Routing corrected", before + " → " + routedDealership() + ". One existing record updated."],
+      unchanged: ["Repeat correction skipped", "0 records updated. The sales record already matches the website."],
+      "wrong-destination": ["Destination rejected", destination + " differs from the original website request. 0 records updated."],
+      missing: ["Correction stopped", "The inquiry has no sales record yet. 0 records updated."],
+      duplicate: ["Correction stopped", "More than one sales record uses this inquiry ID. 0 records updated."]
+    };
+    const [title, detail] = outcomes[correction.status];
+    setRoutingMessage(title + ". " + detail, correction.status);
+    logAction(title, detail, "routing");
+    if (correction.status === "corrected") syncSampleRecords(core.reconcile(sample.website, demoSales));
+    renderRouting();
+  });
+  for (const button of document.querySelectorAll("[data-report]")) {
+    button.addEventListener("click", () => downloadCaseReport(button.dataset.report));
+  }
+
   setText("case-id", sampleInquiry.lead_id);
+  setText("proof-id", sampleInquiry.lead_id);
   for (const id of ["website-time", "message-time"]) {
     byId(id).dateTime = sampleInquiry.submitted_at;
     setText(id, receivedTime);
   }
-  setText("received-event", receivedTime + " · " + sampleInquiry.lead_id);
+  setText("received-event", profileTime.format(new Date(sampleInquiry.submitted_at)) + " PT · " + sampleInquiry.lead_id);
+  setText("routing-case-id", routingInquiry.lead_id + " · Stock " + routingInquiry.vehicle);
+  setText("routing-case-title", routingInquiry.customer + "’s inquiry");
+  setText("routing-website", routingInquiry.dealership);
+  setText("routing-original-time", profileTime.format(new Date(routingInquiry.submitted_at)) + " PT · " + routingInquiry.lead_id);
+  setText("routing-original-mismatch", routingInquiry.dealership + " on website · " + originalRouting + " in sales system");
+  for (const dealership of [originalRouting, routingInquiry.dealership]) {
+    const option = element("option", "", dealership);
+    option.value = dealership;
+    routingDestination.append(option);
+  }
   createLegend();
   replaceDataset(sample.website, sample.crm, "Sample data");
   showStoryStep(0, false);
+  renderRouting();
   renderView(false);
   window.addEventListener("hashchange", () => renderView(true));
 })();

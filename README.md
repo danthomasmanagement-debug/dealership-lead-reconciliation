@@ -6,13 +6,17 @@ A buyer sends a message through the dealership website. The inquiry can still be
 
 [Try the interactive demo](https://danthomasmanagement-debug.github.io/dealership-lead-reconciliation/) or open **index.html** locally. The dashboard starts with fictional dealership records and runs entirely in the browser. It needs no account, API key, installation, or network connection when opened locally.
 
-1. Select **Start demo** to open the dedicated workspace. Inspect the website and sales system records, then select **Recover inquiry**. **Test a safe retry** shows what happens when the same inquiry is already present.
-2. Select **Preview follow-up** and change Maya’s budget or visit timeline. The example conversation, intent badge, vehicle matches, and draft reply update together. Choose a different matching car to feature it in the reply.
-3. Toggle the buyer’s opt-in to see when the reply can be queued. The live activity timeline records each action. Select **Mark deal won** and choose a milestone on the agent scorecard to see what happened. Use the progress bar to revisit available stages.
+1. Select **Start demo** and recover Maya’s inquiry. Compare the sales-record counts before and after. **Test a safe retry** demonstrates that the second attempt adds zero records.
+2. Select **Preview follow-up** and try different conditions for the buyer’s budget or visit timeline. Vehicle matches, the intent badge, and the draft reply update while the original website inquiry stays in view.
+3. Queue the draft with the buyer’s consent, then download a case report from the handoff screen. **Simulate sale** is an optional final action.
+
+Open **Try the routing challenge** to compare another buyer’s original dealership with the sales record. Choose the destination from the evidence and run the correction. A wrong destination changes zero records. The right destination updates one field, and repeating the correction leaves the records unchanged. The case report includes the original value, current value, and the run’s timestamped actions.
 
 For the full comparison, choose **View all inquiries**. Search by lead ID, buyer, dealership, or stock ID, and open a buyer’s **Profile** to see their inquiry details and compare source records. Selected fictional examples include buyer notes. Under **Try your own files**, use the sample CSVs as templates and compare two exports locally.
 
 The built-in sample contains **31 distinct lead IDs**, **23 exact matches**, and **8 to review**. The match rate uses unique website leads as its denominator.
+
+Run `node --test tests/demo-journey.test.js` to verify repeat-safe recovery and routing decisions.
 
 ## Python command line
 

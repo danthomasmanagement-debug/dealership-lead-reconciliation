@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#f7f6ef">
   <title>Lead Check | Dealership inquiry demo</title>
   <link rel="preload" href="instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=9">
   <script defer src="reconcile.js?v=5"></script>
   <script defer src="sample-data.js?v=7"></script>
-  <script defer src="demo-journey.js?v=7"></script>
-  <script defer src="app.js?v=8"></script>
+  <script defer src="demo-journey.js?v=9"></script>
+  <script defer src="app.js?v=9"></script>
 </head>
 <body>
   <header class="site-header">
@@ -34,7 +34,7 @@
       <div class="hero-copy">
         <p class="eyebrow">Dealership inquiry demo</p>
         <h1 id="title" tabindex="-1">Maya asked about a car. <em>Her inquiry went missing.</em></h1>
-        <p>The website saved her message, but it never reached the sales team. Try recovering it and see what the team can do next.</p>
+        <p>The website saved her message. The sales system had no matching record. Recover the inquiry and prepare a follow-up.</p>
         <div class="hero-actions">
           <a id="start-demo" class="button primary advance" href="#demo">Start demo</a>
           <a class="quiet-link" id="review-exceptions" href="#records">View all inquiries</a>
@@ -58,7 +58,7 @@
           </button>
         </div>
         <div class="preview-evidence" id="landing-evidence" role="status">
-          <strong id="landing-evidence-title">The sales team never saw it</strong>
+          <strong id="landing-evidence-title">The sales system has no matching inquiry</strong>
           <p id="landing-evidence-detail">The sales system had no record for inquiry LD-1002.</p>
         </div>
       </section>
@@ -96,10 +96,19 @@
               </dl>
               <p id="trace-evidence" class="trace-evidence" role="status"></p>
               <div role="status">
-                <div class="story-receipt" id="story-receipt" hidden>
-                  <strong id="receipt-title"></strong>
-                  <p id="receipt-detail"></p>
-                </div>
+                <section class="recovery-proof" id="recovery-proof" aria-labelledby="proof-title" hidden>
+                  <header class="proof-heading">
+                    <h3 id="proof-title">Recovery verified</h3>
+                    <span id="proof-id" class="proof-id"></span>
+                  </header>
+                  <div class="proof-flow" role="group" aria-label="Sales records for this inquiry">
+                    <div class="proof-point"><strong id="proof-before"></strong><span>Before recovery</span></div>
+                    <span class="proof-arrow" aria-hidden="true">→</span>
+                    <div class="proof-point is-verified"><strong id="proof-after"></strong><span>After recovery</span></div>
+                  </div>
+                  <p id="proof-impact" class="proof-impact"></p>
+                </section>
+                <p id="retry-receipt" class="retry-receipt" hidden></p>
               </div>
               <div class="story-actions">
                 <button id="show-follow-up" class="button primary advance" type="button" hidden>Preview follow-up</button>
@@ -121,7 +130,7 @@
                       <div class="message incoming">
                         <p class="message-meta"><strong>Maya</strong><time id="message-time"></time></p>
                         <p class="message-text" id="buyer-message"></p>
-                        <p class="message-status">Website inquiry</p>
+                      <p class="message-status">Original website inquiry</p>
                       </div>
                       <div class="message outgoing">
                         <p class="message-meta"><strong>Riverbend Motors</strong></p>
@@ -136,6 +145,7 @@
                   </div>
                 </div>
                 <div class="follow-up-options">
+                  <p class="case-note" id="what-if-note">Try a different budget or timeline to see how the draft changes.</p>
                   <div class="follow-controls">
                     <label>Buyer’s budget
                       <select id="buyer-budget">
@@ -166,7 +176,13 @@
               </div>
             </div>
             <div id="outcome-view" hidden>
-              <p id="outcome-summary" class="case-note"></p>
+              <section class="handoff-card" aria-labelledby="handoff-title">
+                <h3 id="handoff-title">Recovery handoff</h3>
+                <p id="handoff-summary" class="handoff-summary"></p>
+                <div class="handoff-actions">
+                  <button class="button primary" type="button" data-report="recovery">Download case report</button>
+                </div>
+              </section>
               <section class="scoreboard" aria-labelledby="score-title" id="scoreboard" hidden>
                 <div class="score-heading">
                   <span class="score-seal" aria-hidden="true">✓</span>
@@ -191,7 +207,7 @@
                 </div>
               </details>
               <div class="story-actions">
-                <button id="close-deal" class="button primary advance" type="button">Mark deal won</button>
+                <button id="close-deal" class="button secondary" type="button">Simulate sale</button>
                 <button id="restart-story" class="button secondary" type="button">Restart demo</button>
               </div>
             </div>
@@ -209,6 +225,52 @@
             <ol class="event-log" id="event-log" aria-label="Inquiry activity" role="list">
               <li><strong>Website saved Maya’s inquiry</strong><span id="received-event"></span></li>
               <li class="event-missing"><strong>Sales record missing</strong><span>No matching inquiry ID</span></li>
+            </ol>
+          </section>
+          <a class="challenge-link" href="#routing">Try the routing challenge <span aria-hidden="true">→</span></a>
+        </aside>
+      </div>
+    </section>
+
+    <section id="routing-view" class="routing-view demo-view" aria-labelledby="routing-title" hidden>
+      <header class="demo-header">
+        <div class="demo-heading">
+          <a class="quiet-link" href="#demo">← Maya’s recovery</a>
+          <h1 id="routing-title" tabindex="-1">Routing challenge</h1>
+          <p>An inquiry arrived at the wrong dealership. Check the original request and correct the sales record.</p>
+        </div>
+        <a class="button secondary" href="#records">Browse inquiries</a>
+      </header>
+      <div class="demo-grid">
+        <section class="routing-panel case-panel" aria-labelledby="routing-case-title">
+          <div class="routing-content">
+            <p id="routing-case-id" class="case-id"></p>
+            <h2 id="routing-case-title"></h2>
+            <dl class="routing-sources">
+              <div><dt>Dealership on the website request</dt><dd id="routing-website"></dd></div>
+              <div><dt>Dealership in the sales system</dt><dd id="routing-sales"></dd></div>
+            </dl>
+            <form class="routing-controls" id="routing-form">
+              <label>Route this inquiry to
+                <select id="routing-destination" required>
+                  <option value="">Choose a dealership</option>
+                </select>
+              </label>
+              <button id="routing-apply" class="button primary advance" type="submit" disabled>Apply routing correction</button>
+            </form>
+            <p id="routing-result" class="routing-result" role="status" data-state="working">Compare the two records before choosing a destination.</p>
+            <div class="story-actions" id="routing-export" hidden>
+              <button class="button secondary" type="button" data-report="routing">Download case report</button>
+            </div>
+            <p class="case-note">Simulation only. Corrections apply to the sample records in this browser.</p>
+          </div>
+        </section>
+        <aside class="demo-sidebar routing-aside" aria-label="Routing context">
+          <section class="demo-activity" aria-labelledby="routing-activity-title">
+            <h2 id="routing-activity-title">Routing activity</h2>
+            <ol class="event-log" id="routing-events" aria-label="Routing activity" role="list">
+              <li><strong>Website inquiry received</strong><span id="routing-original-time"></span></li>
+              <li class="event-missing"><strong>Dealership mismatch found</strong><span id="routing-original-mismatch"></span></li>
             </ol>
           </section>
         </aside>
