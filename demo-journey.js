@@ -19,14 +19,14 @@
     };
   }
 
-  function plan(inquiry, budget, timing) {
+  function plan(inquiry, budget, timing, preferredStock) {
     const interestedStock = inquiry.vehicle;
     const requestedVehicle = inventory.find((car) => car.stock === interestedStock);
     const readyToVisit = timing === "soon";
     const matches = inventory.filter((car) => car.type === "SUV" && car.drive === "AWD" && car.price < budget)
       .sort((left, right) => Number(right.stock === interestedStock) -
         Number(left.stock === interestedStock) || left.price - right.price);
-    const recommended = matches[0];
+    const recommended = matches.find((car) => car.stock === preferredStock) || matches[0];
     const buyerMessage = readyToVisit
       ? "Is stock " + interestedStock + " still available? I’m looking for an all-wheel-drive SUV under " +
         dollars.format(budget) + ". I can stop by this weekend."
@@ -46,7 +46,7 @@
       reply += "I can keep an eye out for an all-wheel-drive SUV in your budget. Would you like an update when one comes in?";
     }
     return {
-      matches, buyerMessage, reply,
+      matches, recommended, buyerMessage, reply,
       intent: readyToVisit ? "Hot lead" : "Still browsing",
       reason: readyToVisit ? "Asked about a specific car and offered a visit window." :
         "Asked about a specific car, with no visit date yet."

@@ -10,6 +10,7 @@
   const filterButtons = Array.from(document.querySelectorAll("[data-filter]"));
   const dialog = byId("detail-dialog");
   const caseSteps = Array.from(byId("case-progress").children);
+  const scoreButtons = Array.from(document.querySelectorAll("[data-score]"));
   const eventLog = byId("event-log");
   const importForm = byId("import-form");
   const importButton = importForm.querySelector("button[type='submit']");
@@ -19,12 +20,23 @@
     missing: "Missing inquiry", duplicate: "Duplicate", mismatch: "Details differ",
     crm_only: "Sales system only", matched: "Matched"
   };
+  const profileActions = {
+    missing: "Check the inquiry ID in the sales system before recovering it.",
+    duplicate: "Review the copies and confirm which sales record to keep.",
+    mismatch: "Check the highlighted fields against the original inquiry before correcting them.",
+    crm_only: "Verify how the sales team received the inquiry.",
+    matched: "The sales team can use this record for follow-up."
+  };
   const sampleInquiry = sample.website.find((row) => row.lead_id === "LD-1002");
   const receivedTime = new Intl.DateTimeFormat("en-US", {
     hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles"
   }).format(new Date(sampleInquiry.submitted_at)) + " PT";
   const actionTime = new Intl.DateTimeFormat("en-US", {
     hour: "numeric", minute: "2-digit", second: "2-digit", timeZone: "America/Los_Angeles"
+  });
+  const profileTime = new Intl.DateTimeFormat("en-US", {
+    month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
+    timeZone: "America/Los_Angeles"
   });
   const budgetInput = byId("buyer-budget");
   const timingInput = byId("buyer-timing");
@@ -36,6 +48,8 @@
   let recoveryDelta = "";
   let followUpQueued = false;
   let dealWon = false;
+  let selectedStock = "";
+  let queuedCar;
   let result;
   let filter = "issues";
   let page = 0;
@@ -117,15 +131,15 @@
     const lead = element("td");
     lead.append(
       element("div", "record-name", row.lead.customer || "Unnamed buyer"),
-      element("span", "lead-id", row.id)
+      element("span", "lead-id", row.id + (row.lead.vehicle ? " · Stock " + row.lead.vehicle : ""))
     );
     const dealer = element("td", "", row.lead.dealership || "—");
     const status = element("td");
     status.append(element("span", "status-pill status-" + row.status, statusLabels[row.status]));
     const action = element("td");
-    const details = element("button", "text-button", "Details");
+    const details = element("button", "text-button", "Profile");
     details.type = "button";
-    details.setAttribute("aria-label", "Details for " + row.id + ", " + (row.lead.customer || "unnamed lead"));
+    details.setAttribute("aria-label", "View profile for " + (row.lead.customer || "unnamed buyer") + ", " + row.id);
     details.addEventListener("click", () => showDetails(row));
     action.append(details);
     tableRow.append(lead, dealer, status, action);
@@ -172,13 +186,19 @@
     renderTable();
   }
 
-  function showDetails(row) {
-    setText("detail-id", row.id);
-    setText("detail-title", row.lead.customer || "Unnamed buyer");
-    const body = byId("detail-body");
-    const status = element("p", "detail-note");
-    status.append(element("span", "status-pill status-" + row.status, statusLabels[row.status]));
-    const notes = element("p", "detail-note", row.reasons.join(" ") || "Both sources have the same lead details.");
+  function profileFacts(fields) {
+    const list = element("dl", "profile-facts");
+    for (const [label, value] of fields) {
+      const fact = element("div");
+      fact.append(element("dt", "", label), element("dd", "", value || "—"));
+      list.append(fact);
+    }
+    return list;
+  }
+
+  function sourceComparison(row) {
+    const comparison = element("details", "profile-comparison");
+    comparison.open = row.diffs.length > 0;
     const columns = element("div", "detail-columns");
     for (const [label, records] of [["Website", row.website], ["Sales system", row.crm]]) {
       const source = element("section", "detail-source");
@@ -196,8 +216,78 @@
       }
       columns.append(source);
     }
-    body.replaceChildren(status, notes, columns);
+    comparison.append(element("summary", "", "Compare source records"), columns);
+    return comparison;
+  }
+
+  function showDetails(row) {
+    const { customer, dealership, vehicle, submitted_at: submittedAt } = row.lead;
+    const initials = customer.trim().split(/\s+/u).slice(0, 2).map((word) => Array.from(word)[0]).join("");
+    const date = /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:?\d{2})$/i.test(submittedAt)
+      ? new Date(submittedAt) : null;
+    const recorded = date && Number.isFinite(date.getTime()) ? profileTime.format(date) + " PT" : submittedAt;
+    const origin = row.website.length && row.crm.length ? "Website and sales system" :
+      row.website.length ? "Website form" : "Sales system";
+    setText("detail-id", row.id);
+    setText("detail-title", customer || "Unnamed buyer");
+    setText("detail-avatar", initials || "—");
+
+    const overview = element("div", "profile-overview");
+    const overviewTop = element("div", "profile-overview-top");
+    const copy = element("button", "text-button", "Copy inquiry ID");
+    copy.type = "button";
+    const copyStatus = element("span", "sr-only");
+    copyStatus.setAttribute("role", "status");
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(row.id);
+        copy.textContent = "ID copied";
+        copyStatus.textContent = "Copied " + row.id;
+      } catch {
+        copyStatus.className = "profile-copy-status";
+        copyStatus.textContent = "Select and copy " + row.id + " from the profile header.";
+      }
+    });
+    overviewTop.append(element("span", "status-pill status-" + row.status, statusLabels[row.status]), copy, copyStatus);
+    overview.append(overviewTop,
+      profileFacts([["Dealership", dealership], ["Vehicle stock", vehicle], ["Recorded", recorded], ["Record source", origin]]));
+    const review = element("section", "profile-review");
+    review.append(
+      element("h3", "", "What the check found"),
+      element("p", "", row.reasons.join(" ") || "Both sources have the same lead details."),
+      element("p", "profile-next", profileActions[row.status])
+    );
+
+    const content = [overview];
+    const maya = usingSample && row.id === sampleInquiry.lead_id;
+    const sampleNotes = usingSample ? sample.buyerNotes[row.id] : undefined;
+    if (maya || sampleNotes) {
+      const notes = element("section", "profile-context");
+      const plan = maya ? journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value) : null;
+      const buyer = maya ? {
+        needs: "All-wheel-drive SUV",
+        budget: "Under " + journey.dollars.format(Number(budgetInput.value)),
+        timing: timingInput.value === "soon" ? "Ready to visit this weekend" : "Still browsing",
+        message: plan.buyerMessage
+      } : sampleNotes;
+      const facts = [["Looking for", buyer.needs], ["Budget", buyer.budget], ["Timeline", buyer.timing]];
+      if (maya) facts.push(["Text follow-up", consentInput.checked ? "Opted in" : "Awaiting opt-in"]);
+      notes.append(element("h3", "", "Sample buyer notes"), profileFacts(facts),
+        element("blockquote", "", buyer.message));
+      if (maya) {
+        const openCase = element("button", "button primary advance", "Open Maya’s demo");
+        openCase.type = "button";
+        openCase.addEventListener("click", () => {
+          dialog.close();
+          showStoryStep(followUpQueued ? 2 : lastRecovery === null ? 0 : 1);
+        });
+        notes.append(openCase);
+      }
+      content.push(notes);
+    }
+    byId("detail-body").replaceChildren(...content, review, sourceComparison(row));
     dialog.showModal();
+    dialog.scrollTop = 0;
   }
 
   function replaceDataset(website, crm, label) {
@@ -225,21 +315,33 @@
     byId("run-test").classList.toggle("secondary", recovered);
   }
 
+  function currentPlan() {
+    return journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value, selectedStock);
+  }
+
   function updateFollowUp() {
-    const plan = journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value);
+    const plan = currentPlan();
+    if (plan.recommended?.stock !== selectedStock) selectedStock = "";
     setText("buyer-message", plan.buyerMessage);
     setText("intent-level", plan.intent);
     setText("intent-reason", plan.reason);
     byId("intent-level").classList.toggle("hot", timingInput.value === "soon");
     const matches = plan.matches.map((car, index) => {
       const item = element("li");
+      const option = element("label", "vehicle-option");
+      const choice = element("input");
+      choice.type = "radio";
+      choice.name = "offered-stock";
+      choice.value = car.stock;
+      choice.checked = car === plan.recommended;
       const name = element("div");
       name.append(element("strong", "", car.model),
         element("span", "", "All-wheel drive · Stock " + car.stock));
       const price = element("div", "vehicle-price");
       price.append(element("strong", "", journey.dollars.format(car.price)));
       if (!index) price.append(element("span", "", car.stock === sampleInquiry.vehicle ? "Maya’s pick" : "Best fit"));
-      item.append(name, price);
+      option.append(choice, name, price);
+      item.append(option);
       return item;
     });
     byId("vehicle-list").replaceChildren(...matches);
@@ -254,8 +356,24 @@
       ? "Maya’s recovered inquiry became a sale in this example."
       : "The draft is saved in the demo queue. You can now record the sample sales outcome.");
     byId("scoreboard").hidden = !dealWon;
+    if (dealWon) showScoreProof(0);
     byId("close-deal").hidden = dealWon;
     byId("restart-story").className = "button " + (dealWon ? "primary" : "secondary");
+  }
+
+  function showScoreProof(active) {
+    const retries = recoveryAttempts - 1;
+    const retryDetail = retries > 0 ? " Skipped " + retries + (retries === 1 ? " duplicate retry." : " duplicate retries.") : "";
+    const details = [
+      recoveryDelta + retryDetail,
+      queuedCar ? queuedCar.model + " · Stock " + queuedCar.stock + " · " + journey.dollars.format(queuedCar.price) :
+        "The draft offered an inventory availability update.",
+      "Maya’s deal was marked won in this simulation."
+    ];
+    for (const [index, button] of scoreButtons.entries()) {
+      button.setAttribute("aria-pressed", String(index === active));
+    }
+    setText("score-proof", details[active]);
   }
 
   function showStoryStep(step, moveFocus = true) {
@@ -286,6 +404,8 @@
     recoveryDelta = "";
     followUpQueued = false;
     dealWon = false;
+    selectedStock = "";
+    queuedCar = undefined;
     budgetInput.value = "32000";
     timingInput.value = "soon";
     consentInput.checked = true;
@@ -395,14 +515,22 @@
   byId("show-follow-up").addEventListener("click", () => showStoryStep(1));
   byId("back-to-trace").addEventListener("click", () => showStoryStep(0));
   for (const input of [budgetInput, timingInput, consentInput]) input.addEventListener("change", updateFollowUp);
+  for (const [index, button] of scoreButtons.entries()) {
+    button.addEventListener("click", () => showScoreProof(index));
+  }
+  byId("vehicle-list").addEventListener("change", (event) => {
+    if (event.target.name !== "offered-stock") return;
+    selectedStock = event.target.value;
+    setText("reply-message", currentPlan().reply);
+  });
   byId("queue-follow-up").addEventListener("click", () => {
     if (!consentInput.checked || followUpQueued || lastRecovery === null) return;
     followUpQueued = true;
-    const plan = journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value);
-    const car = plan.matches[0];
+    const plan = currentPlan();
+    queuedCar = plan.recommended;
     setText("queued-reply-text", plan.reply);
-    logAction("Follow-up queued", car
-      ? "Stock " + car.stock + " · " + journey.dollars.format(car.price)
+    logAction("Follow-up queued", queuedCar
+      ? "Stock " + queuedCar.stock + " · " + journey.dollars.format(queuedCar.price)
       : "Availability update");
     showStoryStep(2);
   });

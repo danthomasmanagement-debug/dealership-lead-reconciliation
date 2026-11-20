@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#f7f6ef">
   <title>Lead Check | Dealership inquiry demo</title>
   <link rel="preload" href="instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
   <script defer src="reconcile.js?v=5"></script>
-  <script defer src="sample-data.js?v=5"></script>
-  <script defer src="demo-journey.js?v=5"></script>
-  <script defer src="app.js?v=6"></script>
+  <script defer src="sample-data.js?v=7"></script>
+  <script defer src="demo-journey.js?v=7"></script>
+  <script defer src="app.js?v=7"></script>
 </head>
 <body>
   <header class="site-header">
@@ -82,7 +82,7 @@
                 </div>
                 <div class="message outgoing">
                   <p class="message-meta"><strong>Riverbend Motors</strong></p>
-                  <p class="message-text" id="reply-message"></p>
+                  <p class="message-text" id="reply-message" aria-live="polite"></p>
                   <p class="message-status"><span class="draft-label">Draft</span></p>
                 </div>
               </div>
@@ -108,7 +108,7 @@
             </div>
             <section class="vehicle-matches">
               <h3>Matching cars</h3>
-              <ul id="vehicle-list"></ul>
+              <ul id="vehicle-list" aria-label="Choose a vehicle for the draft" role="list"></ul>
             </section>
             <label class="consent-control"><input id="buyer-consent" type="checkbox" checked> Buyer opted in to follow-up</label>
             <div role="status"><p id="follow-up-status" class="case-note" hidden></p></div>
@@ -119,6 +119,21 @@
           </div>
           <div id="outcome-view" hidden>
             <p id="outcome-summary" class="case-note"></p>
+            <section class="scoreboard" aria-labelledby="score-title" id="scoreboard" hidden>
+              <div class="score-heading">
+                <span class="score-seal" aria-hidden="true">✓</span>
+                <div>
+                  <h3 id="score-title">Agent scorecard</h3>
+                  <p>From missed inquiry to closed deal</p>
+                </div>
+              </div>
+              <ol class="score-milestones" aria-label="Completed milestones" role="list">
+                <li><button type="button" data-score="0" aria-pressed="true" aria-controls="score-proof"><span aria-hidden="true">✓</span> Recovered</button></li>
+                <li><button type="button" data-score="1" aria-pressed="false" aria-controls="score-proof"><span aria-hidden="true">✓</span> Follow-up</button></li>
+                <li><button type="button" data-score="2" aria-pressed="false" aria-controls="score-proof"><span aria-hidden="true">✓</span> Deal won</button></li>
+              </ol>
+              <p id="score-proof" class="score-detail" role="status"></p>
+            </section>
             <ol class="event-log" id="event-log" aria-label="Inquiry activity" role="list">
               <li><strong>Website saved Maya’s inquiry</strong><span id="received-event"></span></li>
               <li class="event-missing"><strong>Sales record missing</strong><span>No matching inquiry ID</span></li>
@@ -131,14 +146,6 @@
                 <p class="message-status">Queued in demo</p>
               </div>
             </details>
-            <section class="scoreboard" aria-labelledby="score-title" id="scoreboard" hidden>
-              <h3 id="score-title">Agent scoreboard</h3>
-              <div>
-                <span><strong>1</strong> Inquiry recovered</span>
-                <span><strong>1</strong> Follow-up queued</span>
-                <span><strong>1</strong> Deal won</span>
-              </div>
-            </section>
             <div class="story-actions">
               <button id="close-deal" class="button primary advance" type="button">Mark deal won</button>
               <button id="restart-story" class="button secondary" type="button">Restart demo</button>
@@ -251,9 +258,12 @@
 
   <dialog id="detail-dialog" aria-labelledby="detail-title">
     <div class="dialog-heading">
-      <div>
-        <p id="detail-id" class="lead-id"></p>
-        <h2 id="detail-title"></h2>
+      <div class="profile-identity">
+        <span id="detail-avatar" class="profile-avatar" aria-hidden="true"></span>
+        <div>
+          <h2 id="detail-title"></h2>
+          <p id="detail-id" class="lead-id"></p>
+        </div>
       </div>
       <button id="close-detail" class="button secondary small" type="button" autofocus>Close</button>
     </div>

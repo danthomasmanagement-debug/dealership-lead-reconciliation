@@ -33,7 +33,37 @@
   });
   website.push({ ...website.find((record) => record.lead_id === "LD-1012") });
 
-  const sample = { website, crm };
+  const buyerNotes = {
+    "LD-1001": {
+      needs: "Fuel-efficient daily driver", budget: "$26,000", timing: "Within a month",
+      message: "I have a long commute and would like to see fuel-efficient options. Is stock A214 available to test-drive?"
+    },
+    "LD-1005": {
+      needs: "Four-door commuter", budget: "$28,000", timing: "This month",
+      message: "Could you confirm the mileage on stock D119 and whether it has adaptive cruise control?"
+    },
+    "LD-1007": {
+      needs: "Room for two car seats", budget: "$36,000", timing: "Within two weeks",
+      message: "Can I see stock C633 this Saturday? I’d like to check how two car seats fit."
+    },
+    "LD-1008": {
+      needs: "Compact car with parking sensors", budget: "$25,000", timing: "This week",
+      message: "Is stock A214 still available? I’d like to see how it feels to park and ask about trade-in options."
+    },
+    "LD-1012": {
+      needs: "Easy highway commute", budget: "$30,000", timing: "Within a month",
+      message: "Could you send the service history for stock D119? I’m comparing a few cars for my commute."
+    },
+    "LD-1024": {
+      needs: "Space for luggage and sports gear", budget: "$34,000", timing: "Next month",
+      message: "Can you tell me how much cargo space stock C806 has with the rear seats up?"
+    },
+    "LD-1026": {
+      needs: "Reliable second car", budget: "$27,000", timing: "Flexible",
+      message: "Is stock D119 available in the evenings for a test drive? I’m looking for a second car."
+    }
+  };
+  const sample = { website, crm, buyerNotes };
   if (typeof module === "object" && module.exports) module.exports = sample;
   else scope.LeadSampleData = sample;
 })(globalThis);
