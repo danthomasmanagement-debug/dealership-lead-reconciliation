@@ -11,6 +11,9 @@
   const dialog = byId("detail-dialog");
   const caseSteps = Array.from(byId("case-progress").children);
   const scoreButtons = Array.from(document.querySelectorAll("[data-score]"));
+  const landingSources = Array.from(document.querySelectorAll("[data-preview-source]"));
+  const traceSources = Array.from(document.querySelectorAll("[data-trace]"));
+  const navigation = Array.from(document.querySelectorAll("[data-view-link]"));
   const eventLog = byId("event-log");
   const importForm = byId("import-form");
   const importButton = importForm.querySelector("button[type='submit']");
@@ -50,6 +53,9 @@
   let dealWon = false;
   let selectedStock = "";
   let queuedCar;
+  let traceSource = "sales";
+  let activeView;
+  let recordsLabel = "Sample data";
   let result;
   let filter = "issues";
   let page = 0;
@@ -76,8 +82,47 @@
     eventLog.append(item);
   }
 
+  function currentDatasetLabel() {
+    if (activeView === "demo") return "Fictional case";
+    return activeView === "records" ? recordsLabel : "Sample data";
+  }
+
+  function renderView(moveFocus) {
+    const hash = window.location.hash;
+    const sources = hash === "#sources";
+    activeView = hash === "#demo" ? "demo" : hash === "#records" || sources ? "records" : "overview";
+    byId("overview").hidden = activeView !== "overview";
+    byId("demo-view").hidden = activeView !== "demo";
+    byId("records-view").hidden = activeView !== "records";
+    setText("start-demo", lastRecovery === null ? "Start demo" : "Resume demo");
+    setText("dataset-label", currentDatasetLabel());
+    for (const link of navigation) {
+      link.setAttribute("aria-current", link.dataset.viewLink === activeView ? "page" : "false");
+    }
+    if (dialog.open) dialog.close();
+    if (moveFocus) {
+      const headingId = activeView === "demo" ? "demo-title" :
+        activeView === "records" ? sources ? "sources-title" : "records-title" : "title";
+      byId(headingId).focus({ preventScroll: true });
+    }
+    if (sources) byId("sources").scrollIntoView({ block: "start" });
+    else if (moveFocus) window.scrollTo(0, 0);
+  }
+
+  function showLandingEvidence(source) {
+    const website = source === "website";
+    for (const button of landingSources) {
+      button.setAttribute("aria-pressed", String(button.dataset.previewSource === source));
+    }
+    setText("landing-evidence-title", website ? "The website captured her request" : "The sales team never saw it");
+    setText("landing-evidence-detail", website
+      ? sampleInquiry.customer + " asked about stock " + sampleInquiry.vehicle + " at " + receivedTime + "."
+      : "The sales system had no record for inquiry " + sampleInquiry.lead_id + ".");
+  }
+
   function renderSummary(datasetLabel) {
-    setText("dataset-label", datasetLabel);
+    recordsLabel = datasetLabel;
+    setText("dataset-label", currentDatasetLabel());
     setText("matched-count", formatNumber.format(result.counts.matched));
     setText("exception-count", formatNumber.format(result.issueCount));
     setText("missing-count", formatNumber.format(result.missingFromCrm));
@@ -220,7 +265,7 @@
     return comparison;
   }
 
-  function showDetails(row) {
+  function showDetails(row, sampleContext = usingSample) {
     const { customer, dealership, vehicle, submitted_at: submittedAt } = row.lead;
     const initials = customer.trim().split(/\s+/u).slice(0, 2).map((word) => Array.from(word)[0]).join("");
     const date = /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:?\d{2})$/i.test(submittedAt)
@@ -259,8 +304,8 @@
     );
 
     const content = [overview];
-    const maya = usingSample && row.id === sampleInquiry.lead_id;
-    const sampleNotes = usingSample ? sample.buyerNotes[row.id] : undefined;
+    const maya = sampleContext && row.id === sampleInquiry.lead_id;
+    const sampleNotes = sampleContext ? sample.buyerNotes[row.id] : undefined;
     if (maya || sampleNotes) {
       const notes = element("section", "profile-context");
       const plan = maya ? journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value) : null;
@@ -274,12 +319,12 @@
       if (maya) facts.push(["Text follow-up", consentInput.checked ? "Opted in" : "Awaiting opt-in"]);
       notes.append(element("h3", "", "Sample buyer notes"), profileFacts(facts),
         element("blockquote", "", buyer.message));
-      if (maya) {
+      if (maya && activeView !== "demo") {
         const openCase = element("button", "button primary advance", "Open Maya’s demo");
         openCase.type = "button";
         openCase.addEventListener("click", () => {
           dialog.close();
-          showStoryStep(followUpQueued ? 2 : lastRecovery === null ? 0 : 1);
+          window.location.hash = "demo";
         });
         notes.append(openCase);
       }
@@ -301,7 +346,13 @@
     const recovered = lastRecovery !== null;
     setText("story-sales-title", recovered ? "Recovered" : "No record found");
     byId("story-sales").classList.toggle("recovered", recovered);
-    byId("story-summary").hidden = recovered;
+    for (const button of traceSources) {
+      button.setAttribute("aria-pressed", String(button.dataset.trace === traceSource));
+    }
+    setText("trace-evidence", traceSource === "website"
+      ? sampleInquiry.customer + " asked about stock " + sampleInquiry.vehicle + " at " + receivedTime + "."
+      : recovered ? "Found " + sampleInquiry.lead_id + " in the sample sales system."
+        : "Search for " + sampleInquiry.lead_id + " returned no matching sales record.");
     byId("story-receipt").hidden = !recovered;
     if (recovered) {
       setText("receipt-title", lastRecovery ? "One sales record added" : "Duplicate prevented · attempt " + recoveryAttempts);
@@ -310,6 +361,8 @@
         : sampleInquiry.lead_id + " was already there. The test added zero records.");
     }
     byId("show-follow-up").hidden = !recovered;
+    setText("show-follow-up", followUpQueued ? "Review follow-up" : "Preview follow-up");
+    byId("run-test").hidden = followUpQueued;
     setText("run-test", recovered ? "Test a safe retry" : "Recover inquiry");
     byId("run-test").classList.toggle("primary", !recovered);
     byId("run-test").classList.toggle("secondary", recovered);
@@ -334,6 +387,7 @@
       choice.name = "offered-stock";
       choice.value = car.stock;
       choice.checked = car === plan.recommended;
+      choice.disabled = followUpQueued;
       const name = element("div");
       name.append(element("strong", "", car.model),
         element("span", "", "All-wheel drive · Stock " + car.stock));
@@ -346,6 +400,10 @@
     });
     byId("vehicle-list").replaceChildren(...matches);
     setText("reply-message", plan.reply);
+    setText("reply-state", followUpQueued ? "Queued in demo" : "Draft");
+    for (const input of [budgetInput, timingInput, consentInput]) input.disabled = followUpQueued;
+    byId("queue-follow-up").hidden = followUpQueued;
+    byId("review-outcome").hidden = !followUpQueued;
     byId("queue-follow-up").setAttribute("aria-disabled", String(!consentInput.checked));
     byId("follow-up-status").hidden = consentInput.checked;
     setText("follow-up-status", consentInput.checked ? "" : "The reply stays a draft until the buyer opts in.");
@@ -380,12 +438,14 @@
     byId("story-trace-view").hidden = step !== 0;
     byId("follow-up-view").hidden = step !== 1;
     byId("outcome-view").hidden = step !== 2;
+    const completed = [lastRecovery !== null, followUpQueued, dealWon];
     for (const [index, item] of caseSteps.entries()) {
-      const complete = index < step || (index === 2 && dealWon);
+      const complete = completed[index];
       item.classList.toggle("complete", complete);
-      item.firstElementChild.textContent = complete ? "✓" : String(index + 1);
+      item.querySelector(".step-marker").textContent = complete ? "✓" : String(index + 1);
       item.querySelector(".sr-only").textContent = complete ? "Completed: " : "";
       item.setAttribute("aria-current", index === step ? "step" : "false");
+      item.querySelector("button").disabled = index > 0 && !completed[index - 1];
     }
     const titles = ["Maya Patel’s inquiry", "Help Maya find a car", dealWon ? "Deal won" : "Follow-up queued"];
     setText("story-title", titles[step]);
@@ -406,6 +466,7 @@
     dealWon = false;
     selectedStock = "";
     queuedCar = undefined;
+    traceSource = "sales";
     budgetInput.value = "32000";
     timingInput.value = "soon";
     consentInput.checked = true;
@@ -481,6 +542,10 @@
     if (byId("next").disabled) byId("previous").focus();
   });
   byId("close-detail").addEventListener("click", () => dialog.close());
+  byId("demo-profile").addEventListener("click", () => {
+    const row = core.reconcile(sample.website, demoSales).rows.find((lead) => lead.id === sampleInquiry.lead_id);
+    showDetails(row, true);
+  });
   byId("export").addEventListener("click", () => downloadCsv("lead-exceptions.csv", core.exceptionsCsv(result)));
   byId("download-web").addEventListener("click", () => downloadCsv("website-leads.csv", core.createCsv(core.headers, sample.website)));
   byId("download-crm").addEventListener("click", () => downloadCsv("crm-leads.csv", core.createCsv(core.headers, sample.crm)));
@@ -509,11 +574,24 @@
     } else {
       logAction("Retry " + (recoveryAttempts - 1) + " skipped", "Inquiry already present");
     }
-    updateTrace();
+    showStoryStep(0, false);
     if (recovery.added) byId("show-follow-up").focus({ preventScroll: true });
   });
   byId("show-follow-up").addEventListener("click", () => showStoryStep(1));
   byId("back-to-trace").addEventListener("click", () => showStoryStep(0));
+  byId("review-outcome").addEventListener("click", () => showStoryStep(2));
+  for (const [index, step] of caseSteps.entries()) {
+    step.querySelector("button").addEventListener("click", () => showStoryStep(index));
+  }
+  for (const button of landingSources) {
+    button.addEventListener("click", () => showLandingEvidence(button.dataset.previewSource));
+  }
+  for (const button of traceSources) {
+    button.addEventListener("click", () => {
+      traceSource = button.dataset.trace;
+      updateTrace();
+    });
+  }
   for (const input of [budgetInput, timingInput, consentInput]) input.addEventListener("change", updateFollowUp);
   for (const [index, button] of scoreButtons.entries()) {
     button.addEventListener("click", () => showScoreProof(index));
@@ -554,4 +632,7 @@
   setText("received-event", receivedTime + " · " + sampleInquiry.lead_id);
   createLegend();
   replaceDataset(sample.website, sample.crm, "Sample data");
+  showStoryStep(0, false);
+  renderView(false);
+  window.addEventListener("hashchange", () => renderView(true));
 })();

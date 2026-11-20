@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#f7f6ef">
   <title>Lead Check | Dealership inquiry demo</title>
   <link rel="preload" href="instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
   <script defer src="reconcile.js?v=5"></script>
   <script defer src="sample-data.js?v=7"></script>
   <script defer src="demo-journey.js?v=7"></script>
-  <script defer src="app.js?v=7"></script>
+  <script defer src="app.js?v=8"></script>
 </head>
 <body>
   <header class="site-header">
@@ -20,6 +20,11 @@
         <span class="brand-mark" aria-hidden="true"></span>
         Lead Check
       </a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="#overview" data-view-link="overview" aria-current="page">Home</a>
+        <a href="#demo" data-view-link="demo">Demo</a>
+        <a href="#records" data-view-link="records">Inquiries</a>
+      </nav>
       <span id="dataset-label" class="dataset-label">Sample data</span>
     </div>
   </header>
@@ -28,226 +33,282 @@
     <section id="overview" class="hero" aria-labelledby="title">
       <div class="hero-copy">
         <p class="eyebrow">Dealership inquiry demo</p>
-        <h1 id="title">Maya asked about a car. <em>Her inquiry went missing.</em></h1>
+        <h1 id="title" tabindex="-1">Maya asked about a car. <em>Her inquiry went missing.</em></h1>
         <p>The website saved her message, but it never reached the sales team. Try recovering it and see what the team can do next.</p>
-        <a class="quiet-link" id="review-exceptions" href="#records">View all inquiries</a>
+        <div class="hero-actions">
+          <a id="start-demo" class="button primary advance" href="#demo">Start demo</a>
+          <a class="quiet-link" id="review-exceptions" href="#records">View all inquiries</a>
+        </div>
         <p class="hero-note">Fictional data. No sign-in required.</p>
       </div>
-      <section class="case-panel" aria-labelledby="story-title">
-        <ol id="case-progress" class="case-progress" aria-label="Demo progress" role="list">
-          <li aria-current="step"><span class="step-marker" aria-hidden="true">1</span><span class="sr-only"></span>Recovery</li>
-          <li><span class="step-marker" aria-hidden="true">2</span><span class="sr-only"></span>Follow-up</li>
-          <li><span class="step-marker" aria-hidden="true">3</span><span class="sr-only"></span>Outcome</li>
-        </ol>
-        <div class="case-content">
-          <p class="case-id">Riverbend Motors <span aria-hidden="true">/</span> <span id="case-id">LD-1002</span></p>
-          <h2 id="story-title" tabindex="-1">Maya Patel’s inquiry</h2>
-          <div id="story-trace-view">
-            <dl class="story-trace">
-              <div class="story-step">
-                <dt>Website form</dt>
-                <dd><strong>Received</strong> <time id="website-time"></time></dd>
+      <section class="landing-preview" aria-labelledby="preview-heading">
+        <header class="preview-heading">
+          <h2 id="preview-heading">One inquiry, two systems</h2>
+          <span class="preview-id">LD-1002</span>
+        </header>
+        <div class="preview-flow" role="group" aria-label="Inspect the intake records">
+          <button class="preview-node" type="button" data-preview-source="website" aria-pressed="false" aria-controls="landing-evidence">
+            <span class="preview-system">Website form</span>
+            <strong>Received</strong>
+          </button>
+          <span class="preview-connection" aria-hidden="true"></span>
+          <button class="preview-node" type="button" data-preview-source="sales" aria-pressed="true" aria-controls="landing-evidence">
+            <span class="preview-system">Sales system</span>
+            <strong>No record found</strong>
+          </button>
+        </div>
+        <div class="preview-evidence" id="landing-evidence" role="status">
+          <strong id="landing-evidence-title">The sales team never saw it</strong>
+          <p id="landing-evidence-detail">The sales system had no record for inquiry LD-1002.</p>
+        </div>
+      </section>
+    </section>
+
+    <section id="demo-view" class="demo-view" aria-labelledby="demo-title" hidden>
+      <header class="demo-header">
+        <div class="demo-heading">
+          <a class="quiet-link" href="#overview">← Back to overview</a>
+          <h1 id="demo-title" tabindex="-1">Lead recovery workspace</h1>
+          <p>Trace Maya’s inquiry, try a recovery, and decide how to follow up.</p>
+        </div>
+        <a class="button secondary" href="#records">Browse inquiries</a>
+      </header>
+      <div class="demo-grid">
+        <section class="case-panel" aria-labelledby="story-title">
+          <ol id="case-progress" class="case-progress" aria-label="Demo progress" role="list">
+            <li aria-current="step"><button class="stage-button" type="button" data-stage="0" aria-controls="story-trace-view"><span class="step-marker" aria-hidden="true">1</span><span class="sr-only"></span>Recovery</button></li>
+            <li><button class="stage-button" type="button" data-stage="1" aria-controls="follow-up-view" disabled><span class="step-marker" aria-hidden="true">2</span><span class="sr-only"></span>Follow-up</button></li>
+            <li><button class="stage-button" type="button" data-stage="2" aria-controls="outcome-view" disabled><span class="step-marker" aria-hidden="true">3</span><span class="sr-only"></span>Outcome</button></li>
+          </ol>
+          <div class="case-content">
+            <p class="case-id">Riverbend Motors <span aria-hidden="true">/</span> <span id="case-id">LD-1002</span></p>
+            <h2 id="story-title" tabindex="-1">Maya Patel’s inquiry</h2>
+            <div id="story-trace-view">
+              <dl class="story-trace">
+                <div class="story-step">
+                  <dt><button type="button" class="trace-toggle" data-trace="website" aria-pressed="false" aria-controls="trace-evidence">Website form</button></dt>
+                  <dd><strong>Received</strong> <time id="website-time"></time></dd>
+                </div>
+                <div class="story-step" id="story-sales">
+                  <dt><button type="button" class="trace-toggle" data-trace="sales" aria-pressed="true" aria-controls="trace-evidence">Sales system</button></dt>
+                  <dd><strong id="story-sales-title">No record found</strong></dd>
+                </div>
+              </dl>
+              <p id="trace-evidence" class="trace-evidence" role="status"></p>
+              <div role="status">
+                <div class="story-receipt" id="story-receipt" hidden>
+                  <strong id="receipt-title"></strong>
+                  <p id="receipt-detail"></p>
+                </div>
               </div>
-              <div class="story-step" id="story-sales">
-                <dt>Sales system</dt>
-                <dd><strong id="story-sales-title">No record found</strong></dd>
-              </div>
-            </dl>
-            <p id="story-summary" class="case-note">The two systems are checked using the same inquiry ID.</p>
-            <div role="status">
-              <div class="story-receipt" id="story-receipt" hidden>
-                <strong id="receipt-title"></strong>
-                <p id="receipt-detail"></p>
+              <div class="story-actions">
+                <button id="show-follow-up" class="button primary advance" type="button" hidden>Preview follow-up</button>
+                <button id="run-test" class="button primary advance" type="button">Recover inquiry</button>
               </div>
             </div>
-            <div class="story-actions">
-              <button id="show-follow-up" class="button primary advance" type="button" hidden>Preview follow-up</button>
-              <button id="run-test" class="button primary advance" type="button">Recover inquiry</button>
+            <div id="follow-up-view" hidden>
+              <div class="follow-up-grid">
+                <div class="follow-up-thread">
+                  <section class="message-thread" aria-labelledby="thread-title" aria-describedby="thread-channel">
+                    <header class="thread-header">
+                      <span class="thread-avatar" aria-hidden="true">MP</span>
+                      <div>
+                        <h3 id="thread-title">Maya Patel</h3>
+                        <p id="thread-channel">Text message preview</p>
+                      </div>
+                    </header>
+                    <div class="thread-messages">
+                      <div class="message incoming">
+                        <p class="message-meta"><strong>Maya</strong><time id="message-time"></time></p>
+                        <p class="message-text" id="buyer-message"></p>
+                        <p class="message-status">Website inquiry</p>
+                      </div>
+                      <div class="message outgoing">
+                        <p class="message-meta"><strong>Riverbend Motors</strong></p>
+                        <p class="message-text" id="reply-message" aria-live="polite"></p>
+                        <p class="message-status"><span class="draft-label" id="reply-state">Draft</span></p>
+                      </div>
+                    </div>
+                  </section>
+                  <div class="intent-note" aria-live="polite">
+                    <strong id="intent-level"></strong>
+                    <span id="intent-reason"></span>
+                  </div>
+                </div>
+                <div class="follow-up-options">
+                  <div class="follow-controls">
+                    <label>Buyer’s budget
+                      <select id="buyer-budget">
+                        <option value="28000">Under $28,000</option>
+                        <option value="32000" selected>Under $32,000</option>
+                        <option value="36000">Under $36,000</option>
+                      </select>
+                    </label>
+                    <label>Buyer’s timeline
+                      <select id="buyer-timing">
+                        <option value="soon">Ready to visit</option>
+                        <option value="exploring">Just browsing</option>
+                      </select>
+                    </label>
+                  </div>
+                  <section class="vehicle-matches">
+                    <h3>Matching cars</h3>
+                    <ul id="vehicle-list" aria-label="Choose a vehicle for the draft" role="list"></ul>
+                  </section>
+                  <label class="consent-control"><input id="buyer-consent" type="checkbox" checked> Buyer opted in to follow-up</label>
+                  <div role="status"><p id="follow-up-status" class="case-note" hidden></p></div>
+                  <div class="story-actions">
+                    <button id="queue-follow-up" class="button primary advance" type="button" aria-describedby="follow-up-status">Queue demo follow-up</button>
+                    <button id="review-outcome" class="button primary advance" type="button" hidden>View outcome</button>
+                    <button id="back-to-trace" class="text-button" type="button">Back to recovery</button>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div id="follow-up-view" hidden>
-            <section class="message-thread" aria-labelledby="thread-title" aria-describedby="thread-channel">
-              <header class="thread-header">
-                <span class="thread-avatar" aria-hidden="true">MP</span>
-                <div>
-                  <h3 id="thread-title">Maya Patel</h3>
-                  <p id="thread-channel">Text message preview</p>
+            <div id="outcome-view" hidden>
+              <p id="outcome-summary" class="case-note"></p>
+              <section class="scoreboard" aria-labelledby="score-title" id="scoreboard" hidden>
+                <div class="score-heading">
+                  <span class="score-seal" aria-hidden="true">✓</span>
+                  <div>
+                    <h3 id="score-title">Agent scorecard</h3>
+                    <p>From missed inquiry to closed deal</p>
+                  </div>
                 </div>
-              </header>
-              <div class="thread-messages">
-                <div class="message incoming">
-                  <p class="message-meta"><strong>Maya</strong><time id="message-time"></time></p>
-                  <p class="message-text" id="buyer-message"></p>
-                  <p class="message-status">Website inquiry</p>
-                </div>
+                <ol class="score-milestones" aria-label="Completed milestones" role="list">
+                  <li><button type="button" data-score="0" aria-pressed="true" aria-controls="score-proof"><span aria-hidden="true">✓</span> Recovered</button></li>
+                  <li><button type="button" data-score="1" aria-pressed="false" aria-controls="score-proof"><span aria-hidden="true">✓</span> Follow-up</button></li>
+                  <li><button type="button" data-score="2" aria-pressed="false" aria-controls="score-proof"><span aria-hidden="true">✓</span> Deal won</button></li>
+                </ol>
+                <p id="score-proof" class="score-detail" role="status"></p>
+              </section>
+              <details class="queued-reply">
+                <summary>View queued reply</summary>
                 <div class="message outgoing">
                   <p class="message-meta"><strong>Riverbend Motors</strong></p>
-                  <p class="message-text" id="reply-message" aria-live="polite"></p>
-                  <p class="message-status"><span class="draft-label">Draft</span></p>
+                  <p class="message-text" id="queued-reply-text"></p>
+                  <p class="message-status">Queued in demo</p>
                 </div>
+              </details>
+              <div class="story-actions">
+                <button id="close-deal" class="button primary advance" type="button">Mark deal won</button>
+                <button id="restart-story" class="button secondary" type="button">Restart demo</button>
               </div>
-            </section>
-            <div class="intent-note" aria-live="polite">
-              <strong id="intent-level"></strong>
-              <span id="intent-reason"></span>
             </div>
-            <div class="follow-controls">
-              <label>Buyer’s budget
-                <select id="buyer-budget">
-                  <option value="28000">Under $28,000</option>
-                  <option value="32000" selected>Under $32,000</option>
-                  <option value="36000">Under $36,000</option>
-                </select>
-              </label>
-              <label>Buyer’s timeline
-                <select id="buyer-timing">
-                  <option value="soon">Ready to visit</option>
-                  <option value="exploring">Just browsing</option>
-                </select>
-              </label>
-            </div>
-            <section class="vehicle-matches">
-              <h3>Matching cars</h3>
-              <ul id="vehicle-list" aria-label="Choose a vehicle for the draft" role="list"></ul>
-            </section>
-            <label class="consent-control"><input id="buyer-consent" type="checkbox" checked> Buyer opted in to follow-up</label>
-            <div role="status"><p id="follow-up-status" class="case-note" hidden></p></div>
-            <div class="story-actions">
-              <button id="queue-follow-up" class="button primary advance" type="button" aria-describedby="follow-up-status">Queue demo follow-up</button>
-              <button id="back-to-trace" class="text-button" type="button">Back to recovery</button>
-            </div>
+            <p class="case-note">Simulation only. Messages stay in this browser.</p>
           </div>
-          <div id="outcome-view" hidden>
-            <p id="outcome-summary" class="case-note"></p>
-            <section class="scoreboard" aria-labelledby="score-title" id="scoreboard" hidden>
-              <div class="score-heading">
-                <span class="score-seal" aria-hidden="true">✓</span>
-                <div>
-                  <h3 id="score-title">Agent scorecard</h3>
-                  <p>From missed inquiry to closed deal</p>
-                </div>
-              </div>
-              <ol class="score-milestones" aria-label="Completed milestones" role="list">
-                <li><button type="button" data-score="0" aria-pressed="true" aria-controls="score-proof"><span aria-hidden="true">✓</span> Recovered</button></li>
-                <li><button type="button" data-score="1" aria-pressed="false" aria-controls="score-proof"><span aria-hidden="true">✓</span> Follow-up</button></li>
-                <li><button type="button" data-score="2" aria-pressed="false" aria-controls="score-proof"><span aria-hidden="true">✓</span> Deal won</button></li>
-              </ol>
-              <p id="score-proof" class="score-detail" role="status"></p>
-            </section>
+        </section>
+        <aside class="demo-sidebar" aria-label="Case context">
+          <section class="demo-contact" aria-labelledby="contact-title">
+            <h2 id="contact-title">Maya Patel</h2>
+            <p>Riverbend Motors · Stock B371</p>
+            <button id="demo-profile" class="text-button" type="button">Open buyer profile</button>
+          </section>
+          <section class="demo-activity" aria-labelledby="activity-title">
+            <h2 id="activity-title">Live activity</h2>
             <ol class="event-log" id="event-log" aria-label="Inquiry activity" role="list">
               <li><strong>Website saved Maya’s inquiry</strong><span id="received-event"></span></li>
               <li class="event-missing"><strong>Sales record missing</strong><span>No matching inquiry ID</span></li>
             </ol>
-            <details class="queued-reply">
-              <summary>View queued reply</summary>
-              <div class="message outgoing">
-                <p class="message-meta"><strong>Riverbend Motors</strong></p>
-                <p class="message-text" id="queued-reply-text"></p>
-                <p class="message-status">Queued in demo</p>
-              </div>
-            </details>
-            <div class="story-actions">
-              <button id="close-deal" class="button primary advance" type="button">Mark deal won</button>
-              <button id="restart-story" class="button secondary" type="button">Restart demo</button>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <div id="records-view" hidden>
+      <section class="metrics" aria-label="Reconciliation summary">
+        <article class="metric">
+          <strong id="missing-count">0</strong>
+          <span>missing inquiries</span>
+        </article>
+        <article class="metric">
+          <strong id="matched-count">0</strong>
+          <span>matched</span>
+        </article>
+        <article class="metric">
+          <strong id="exception-count">0</strong>
+          <span>need review</span>
+        </article>
+        <article class="metric">
+          <strong id="match-rate">—</strong>
+          <span id="match-rate-caption">of website inquiries match</span>
+        </article>
+      </section>
+
+      <div class="workspace">
+        <section id="records" class="panel records-panel" aria-labelledby="records-title">
+          <div class="panel-heading">
+            <div>
+              <h2 id="records-title" tabindex="-1">What the check found</h2>
+              <p id="table-caption" aria-live="polite">Loading sample records</p>
+            </div>
+            <button id="export" type="button" class="button secondary">
+              Download issue list (CSV)
+            </button>
+          </div>
+          <div class="table-controls">
+            <div class="segmented" role="group" aria-label="Filter lead records">
+              <button type="button" data-filter="issues" aria-pressed="true">Needs review</button>
+              <button type="button" data-filter="all" aria-pressed="false">All inquiries</button>
+              <button type="button" data-filter="matched" aria-pressed="false">Matched</button>
+            </div>
+            <label class="search-field">
+              <span class="sr-only">Search inquiries</span>
+              <input id="search" type="search" placeholder="Search inquiries">
+            </label>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Buyer</th>
+                  <th scope="col">Dealership</th>
+                  <th scope="col">Status</th>
+                  <th scope="col"><span class="sr-only">Details</span></th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <div id="pages" class="pages">
+            <span id="page-label"></span>
+            <div>
+              <button id="previous" class="button secondary small" type="button">Previous</button>
+              <button id="next" class="button secondary small" type="button">Next</button>
             </div>
           </div>
-          <p class="case-note">Simulation only. Messages stay in this browser.</p>
-        </div>
-      </section>
-    </section>
-
-    <section class="metrics" aria-label="Reconciliation summary">
-      <article class="metric">
-        <strong id="missing-count">0</strong>
-        <span>missing inquiries</span>
-      </article>
-      <article class="metric">
-        <strong id="matched-count">0</strong>
-        <span>matched</span>
-      </article>
-      <article class="metric">
-        <strong id="exception-count">0</strong>
-        <span>need review</span>
-      </article>
-      <article class="metric">
-        <strong id="match-rate">—</strong>
-        <span id="match-rate-caption">of website inquiries match</span>
-      </article>
-    </section>
-
-    <div class="workspace">
-      <section id="records" class="panel records-panel" aria-labelledby="records-title">
-        <div class="panel-heading">
-          <div>
-            <h2 id="records-title">What the check found</h2>
-            <p id="table-caption" aria-live="polite">Loading sample records</p>
-          </div>
-          <button id="export" type="button" class="button secondary">
-            Download issue list (CSV)
-          </button>
-        </div>
-        <div class="table-controls">
-          <div class="segmented" role="group" aria-label="Filter lead records">
-            <button type="button" data-filter="issues" aria-pressed="true">Needs review</button>
-            <button type="button" data-filter="all" aria-pressed="false">All inquiries</button>
-            <button type="button" data-filter="matched" aria-pressed="false">Matched</button>
-          </div>
-          <label class="search-field">
-            <span class="sr-only">Search inquiries</span>
-            <input id="search" type="search" placeholder="Search inquiries">
-          </label>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Buyer</th>
-                <th scope="col">Dealership</th>
-                <th scope="col">Status</th>
-                <th scope="col"><span class="sr-only">Details</span></th>
-              </tr>
-            </thead>
-            <tbody id="rows"></tbody>
-          </table>
-        </div>
-        <div id="pages" class="pages">
-          <span id="page-label"></span>
-          <div>
-            <button id="previous" class="button secondary small" type="button">Previous</button>
-            <button id="next" class="button secondary small" type="button">Next</button>
-          </div>
-        </div>
-      </section>
-
-      <aside class="sidebar" aria-label="Reconciliation tools">
-        <section class="panel breakdown" aria-labelledby="breakdown-title">
-          <h2 id="breakdown-title">Types of issues</h2>
-          <div id="status-bar" class="status-bar" aria-hidden="true"></div>
-          <ul id="legend" class="legend"></ul>
         </section>
 
-        <section id="sources" class="panel sources" aria-labelledby="sources-title">
-          <h2 id="sources-title">Try your own files</h2>
-          <p>Choose two CSV files to compare. They stay in your browser.</p>
-          <form id="import-form">
-            <label class="file-input">
-              <span>Website CSV</span>
-              <input type="file" id="website-file" accept=".csv,text/csv">
-            </label>
-            <label class="file-input">
-              <span>Sales system CSV</span>
-              <input type="file" id="crm-file" accept=".csv,text/csv">
-            </label>
-            <button class="button run" type="submit">Compare files</button>
-            <p id="import-message" class="import-message" role="status" hidden></p>
-          </form>
-          <div class="source-links">
-            <button class="text-button" id="reset" type="button">Reset sample</button>
-            <button class="text-button" id="download-web" type="button">Website sample</button>
-            <button class="text-button" id="download-crm" type="button">Sales system sample</button>
-          </div>
-        </section>
-      </aside>
+        <aside class="sidebar" aria-label="Reconciliation tools">
+          <section class="panel breakdown" aria-labelledby="breakdown-title">
+            <h2 id="breakdown-title">Types of issues</h2>
+            <div id="status-bar" class="status-bar" aria-hidden="true"></div>
+            <ul id="legend" class="legend"></ul>
+          </section>
+
+          <section id="sources" class="panel sources" aria-labelledby="sources-title">
+            <h2 id="sources-title" tabindex="-1">Try your own files</h2>
+            <p>Choose two CSV files to compare. They stay in your browser.</p>
+            <form id="import-form">
+              <label class="file-input">
+                <span>Website CSV</span>
+                <input type="file" id="website-file" accept=".csv,text/csv">
+              </label>
+              <label class="file-input">
+                <span>Sales system CSV</span>
+                <input type="file" id="crm-file" accept=".csv,text/csv">
+              </label>
+              <button class="button run" type="submit">Compare files</button>
+              <p id="import-message" class="import-message" role="status" hidden></p>
+            </form>
+            <div class="source-links">
+              <button class="text-button" id="reset" type="button">Reset sample</button>
+              <button class="text-button" id="download-web" type="button">Website sample</button>
+              <button class="text-button" id="download-crm" type="button">Sales system sample</button>
+            </div>
+          </section>
+        </aside>
+      </div>
     </div>
   </main>
 

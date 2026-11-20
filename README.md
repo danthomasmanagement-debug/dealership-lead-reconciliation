@@ -6,9 +6,9 @@ A buyer sends a message through the dealership website. The inquiry can still be
 
 [Try the interactive demo](https://danthomasmanagement-debug.github.io/dealership-lead-reconciliation/) or open **index.html** locally. The dashboard starts with fictional dealership records and runs entirely in the browser. It needs no account, API key, installation, or network connection when opened locally.
 
-1. Compare the website and sales system records at the top of the page. Select **Recover inquiry** to add the missing sales record. **Test a safe retry** shows what happens when the same inquiry is already present.
+1. Select **Start demo** to open the dedicated workspace. Inspect the website and sales system records, then select **Recover inquiry**. **Test a safe retry** shows what happens when the same inquiry is already present.
 2. Select **Preview follow-up** and change Maya’s budget or visit timeline. The example conversation, intent badge, vehicle matches, and draft reply update together. Choose a different matching car to feature it in the reply.
-3. Toggle the buyer’s opt-in to see when the reply can be queued. The activity timeline records the simulated recovery and follow-up. Select **Mark deal won** and choose a milestone on the agent scorecard to see what happened.
+3. Toggle the buyer’s opt-in to see when the reply can be queued. The live activity timeline records each action. Select **Mark deal won** and choose a milestone on the agent scorecard to see what happened. Use the progress bar to revisit available stages.
 
 For the full comparison, choose **View all inquiries**. Search by lead ID, buyer, dealership, or stock ID, and open a buyer’s **Profile** to see their inquiry details and compare source records. Selected fictional examples include buyer notes. Under **Try your own files**, use the sample CSVs as templates and compare two exports locally.
 
