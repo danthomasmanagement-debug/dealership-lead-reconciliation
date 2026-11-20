@@ -51,7 +51,7 @@
   const consentInput = byId("buyer-consent");
   const replyEdits = { short: false, alternateTime: false };
   const consentTask = "Review Maya’s inquiry and confirm her contact preferences.";
-  const responseActions = { visit: "Log sample test drive", draft: "Draft a cheaper reply", task: "Create sales task" };
+  const responseActions = { visit: "Choose a time", draft: "Draft a cheaper reply", task: "Create sales task" };
   let demoSales = sample.crm;
   let usingSample = true;
   let recoveryProof = null;
@@ -63,6 +63,8 @@
   let responseApplied = false;
   let responseDraft = "";
   let responseResult = "";
+  let visitSlotId = "";
+  let visitBooking = null;
   let dealWon = false;
   let selectedStock = "";
   let traceSource = "sales";
@@ -489,18 +491,52 @@
   }
 
   function renderBuyerResponse() {
+    const pickingVisit = responseApplied && response?.nextAction === "visit";
     for (const button of responseButtons) {
       button.setAttribute("aria-pressed", String(button.dataset.response === responseKind));
       button.disabled = responseApplied;
     }
     setText("buyer-response", response?.message || "");
     setText("response-detail", response?.detail || "");
+    byId("response-detail").hidden = pickingVisit;
     setText("response-action", response ? responseActions[response.nextAction] : "");
     byId("response-action").hidden = !response || responseApplied;
     byId("response-draft").hidden = !responseDraft;
     setText("response-draft-text", responseDraft);
     byId("response-feedback").hidden = !responseResult;
     setText("response-feedback", responseResult);
+    renderVisit(pickingVisit);
+  }
+
+  function visitLabel(booking) {
+    return booking.window.split(" ")[0] + " at " + booking.time + " PT";
+  }
+
+  function renderVisit(pickingVisit) {
+    byId("visit-picker").hidden = !pickingVisit || visitBooking !== null;
+    byId("visit-confirmation").hidden = visitBooking === null;
+    if (visitBooking) {
+      setText("visit-receipt", visitLabel(visitBooking) + " · " + sampleInquiry.dealership);
+    }
+    if (!pickingVisit || visitBooking) return;
+
+    const visitWindow = queuedPlan.appointment;
+    const slots = journey.visitSlots(visitWindow);
+    setText("visit-window", visitWindow + " · Pacific time");
+    byId("confirm-visit").disabled = !visitSlotId;
+    const choices = slots.map((slot) => {
+      const label = element("label", "visit-slot");
+      const input = element("input");
+      input.type = "radio";
+      input.name = "visit-slot";
+      input.value = slot.id;
+      input.disabled = !slot.available;
+      input.checked = slot.id === visitSlotId;
+      label.append(input, element("strong", "", slot.time),
+        element("span", "visit-availability", slot.available ? "Available" : "Taken"));
+      return label;
+    });
+    byId("visit-slots").replaceChildren(...choices);
   }
 
   function chooseBuyerResponse(kind) {
@@ -515,8 +551,7 @@
     responseApplied = true;
     logAction("Sample buyer response", response.message);
     if (response.nextAction === "visit") {
-      responseResult = "Sample test drive noted for " + queuedPlan.appointment + ".";
-      logAction("Sample test drive noted", queuedPlan.appointment);
+      visitSlotId = journey.visitSlots(queuedPlan.appointment).find((slot) => slot.available)?.id || "";
     } else if (response.nextAction === "draft") {
       responseDraft = currentPlan(response.car.stock).reply;
       responseResult = "Cheaper option drafted.";
@@ -526,12 +561,17 @@
       logAction("Sales task created", response.detail);
     }
     renderBuyerResponse();
-    byId("response-feedback").focus();
+    if (response.nextAction === "visit") {
+      byId("visit-slots").querySelector("input:checked")?.focus();
+    } else {
+      byId("response-feedback").focus();
+    }
   }
 
   function updateOutcome() {
     const queuedCar = queuedPlan?.recommended;
-    setText("handoff-summary", queuedCar ? "Stock " + queuedCar.stock + " · Buyer consent confirmed" :
+    setText("handoff-summary", visitBooking ? visitLabel(visitBooking) + " · Stock " + queuedCar.stock :
+      queuedCar ? "Stock " + queuedCar.stock + " · Buyer consent confirmed" :
       handoffTask ? consentTask : "Inventory follow-up · Buyer consent confirmed");
     byId("response-demo").hidden = queuedPlan === null;
     byId("outcome-options").hidden = queuedPlan === null;
@@ -572,7 +612,8 @@
       item.querySelector("button").disabled = index > 0 && !completed[index - 1];
     }
     const titles = [recoveryProof ? "Maya’s inquiry is back" : "Recover the inquiry",
-      "Review the reply", handoffTask ? "Sales task created" : dealWon ? "Sample deal won" : "Reply queued"];
+      "Review the reply", handoffTask ? "Sales task created" : dealWon ? "Sample deal won" :
+        visitBooking ? "Test drive booked" : "Reply queued"];
     setText("story-title", titles[step]);
     [updateTrace, updateFollowUp, updateOutcome][step]();
     if (moveFocus) {
@@ -592,6 +633,9 @@
     responseApplied = false;
     responseDraft = "";
     responseResult = "";
+    visitSlotId = "";
+    visitBooking = null;
+    byId("visit-error").hidden = true;
     replyEdits.short = false;
     replyEdits.alternateTime = false;
     dealWon = false;
@@ -670,6 +714,7 @@
         "Draft: " + (queuedPlan?.reply || "Pending consent"),
         "Simulated sale: " + (dealWon ? "Marked won" : "No sale recorded")
       );
+      if (visitBooking) lines.push("Sample test drive: " + visitLabel(visitBooking) + " · " + inquiry.dealership);
     }
     lines.push("", "Simulation run activity (UTC)");
     for (const event of caseEvents[caseType]) {
@@ -810,6 +855,27 @@
     if (event.currentTarget.open && !response) chooseBuyerResponse("interested");
   });
   byId("response-action").addEventListener("click", applyBuyerResponse);
+  byId("visit-slots").addEventListener("change", (event) => {
+    if (event.target.name !== "visit-slot") return;
+    visitSlotId = event.target.value;
+    byId("confirm-visit").disabled = false;
+    byId("visit-error").hidden = true;
+  });
+  byId("visit-picker").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!queuedPlan || !responseApplied || response?.nextAction !== "visit") return;
+    const result = journey.bookVisit(queuedPlan.appointment, visitSlotId, visitBooking);
+    if (result.status === "already-booked") return;
+    if (result.status === "unavailable") {
+      setText("visit-error", "Choose an available time.");
+      byId("visit-error").hidden = false;
+      return;
+    }
+    visitBooking = result.booking;
+    logAction("Sample test drive booked", visitLabel(visitBooking) + " · " + sampleInquiry.dealership);
+    showStoryStep(2, false);
+    byId("visit-confirmation").focus();
+  });
   for (const [index, button] of scoreButtons.entries()) {
     button.addEventListener("click", () => showScoreProof(index));
   }

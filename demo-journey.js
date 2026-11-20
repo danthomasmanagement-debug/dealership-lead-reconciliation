@@ -9,6 +9,18 @@
     { stock: "D119", model: "2024 Sedan", price: 25500, drive: "AWD", type: "Sedan" }
   ];
   const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  const schedule = new Map([
+    ["Saturday morning", [
+      { id: "sat-0930", time: "9:30 AM", available: false },
+      { id: "sat-1030", time: "10:30 AM", available: true },
+      { id: "sat-1130", time: "11:30 AM", available: true }
+    ]],
+    ["Monday afternoon", [
+      { id: "mon-1530", time: "3:30 PM", available: false },
+      { id: "mon-1630", time: "4:30 PM", available: true },
+      { id: "mon-1730", time: "5:30 PM", available: true }
+    ]]
+  ]);
 
   function normalizeKey(value) {
     return value.trim().toUpperCase();
@@ -137,7 +149,20 @@
     };
   }
 
-  const api = { recover, correctRouting, plan, recommendationReason, cheaperMatch, respondToReply, dollars };
+  function visitSlots(window) {
+    return (schedule.get(window) || []).map((slot) => ({ ...slot }));
+  }
+
+  function bookVisit(window, slotId, existingBooking) {
+    if (existingBooking) return { status: "already-booked", booking: existingBooking };
+
+    const slot = schedule.get(window)?.find(({ id, available }) => id === slotId && available);
+    if (!slot) return { status: "unavailable", booking: null };
+
+    return { status: "booked", booking: { id: slot.id, time: slot.time, window } };
+  }
+
+  const api = { recover, correctRouting, plan, recommendationReason, cheaperMatch, respondToReply, visitSlots, bookVisit, dollars };
   if (typeof module === "object" && module.exports) module.exports = api;
   else scope.LeadDemoJourney = api;
 })(globalThis);

@@ -1,6 +1,8 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { correctRouting, recover, plan, recommendationReason, cheaperMatch, respondToReply } = require("../demo-journey.js");
+const {
+  correctRouting, recover, plan, recommendationReason, cheaperMatch, respondToReply, visitSlots, bookVisit
+} = require("../demo-journey.js");
 const { website, crm } = require("../sample-data.js");
 
 const routingInquiry = website.find((row) => row.lead_id === "LD-1024");
@@ -141,4 +143,48 @@ test("a cheaper request offers an affordable alternative or asks for a team foll
   assert.match(alternative.detail, /\$27,600/);
   assert.equal(constrained.nextAction, "task");
   assert.equal(constrained.car, undefined);
+});
+
+test("each offered visit window has one taken slot and two available slots", () => {
+  const saturday = plan(mayaInquiry, 32000, "soon").appointment;
+  const monday = plan(mayaInquiry, 32000, "soon", undefined, { alternateTime: true }).appointment;
+
+  assert.deepEqual(visitSlots(saturday), [
+    { id: "sat-0930", time: "9:30 AM", available: false },
+    { id: "sat-1030", time: "10:30 AM", available: true },
+    { id: "sat-1130", time: "11:30 AM", available: true }
+  ]);
+  assert.deepEqual(visitSlots(monday), [
+    { id: "mon-1530", time: "3:30 PM", available: false },
+    { id: "mon-1630", time: "4:30 PM", available: true },
+    { id: "mon-1730", time: "5:30 PM", available: true }
+  ]);
+  assert.deepEqual(visitSlots(""), []);
+});
+
+test("changing a returned slot does not change later availability", () => {
+  const slots = visitSlots("Saturday morning");
+  slots[0].available = true;
+  slots.pop();
+
+  const fresh = visitSlots("Saturday morning");
+  assert.equal(fresh.length, 3);
+  assert.equal(fresh[0].available, false);
+});
+
+test("booking rejects taken, unknown, and mismatched-window slots", () => {
+  for (const slotId of ["sat-0930", "missing", "mon-1630"]) {
+    assert.deepEqual(bookVisit("Saturday morning", slotId), { status: "unavailable", booking: null });
+  }
+});
+
+test("booking selects a valid time and preserves it on a repeat attempt", () => {
+  const first = bookVisit("Monday afternoon", "mon-1630");
+  assert.deepEqual(first, {
+    status: "booked", booking: { id: "mon-1630", time: "4:30 PM", window: "Monday afternoon" }
+  });
+
+  const retry = bookVisit("Monday afternoon", "mon-1730", first.booking);
+  assert.equal(retry.status, "already-booked");
+  assert.strictEqual(retry.booking, first.booking);
 });

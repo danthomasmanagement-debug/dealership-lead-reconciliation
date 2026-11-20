@@ -8,7 +8,7 @@ A buyer sends a message through the dealership website. The inquiry can still be
 
 1. Select **Start demo** and **Recover Maya’s inquiry**. **Case details** contains the before-and-after evidence and the repeat-safe recovery test.
 2. Select **See suggested reply** and **Why this car?** to see the recommendation rationale. **Customize reply** includes one-tap edits for length, price, and visit time, along with budget and inventory controls.
-3. Select **Queue sample reply**, or **Create sales task** when consent is missing. **See Maya’s response** lets you play out a sample test drive or a request for a cheaper option. The actions appear in the downloadable report.
+3. Select **Queue sample reply**, or **Create sales task** when consent is missing. **See Maya’s response** lets you pick an available sample test-drive slot when she accepts the offered window, or draft a lower-priced option. The booking and other actions appear in the downloadable report.
 
 Open **Try the routing challenge** to compare another buyer’s original dealership with the sales record. Choose the destination from the evidence and run the correction. A wrong destination changes zero records. The right destination updates one field, and repeating the correction leaves the records unchanged. The case report includes the original value, current value, and the run’s timestamped actions.
 

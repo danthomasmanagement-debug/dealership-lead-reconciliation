@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#f7f6ef">
   <title>Lead Check | Dealership inquiry demo</title>
   <link rel="preload" href="instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
   <script defer src="reconcile.js?v=5"></script>
   <script defer src="sample-data.js?v=7"></script>
-  <script defer src="demo-journey.js?v=11"></script>
-  <script defer src="app.js?v=11"></script>
+  <script defer src="demo-journey.js?v=12"></script>
+  <script defer src="app.js?v=12"></script>
 </head>
 <body>
   <header class="site-header">
@@ -203,6 +203,21 @@
                   <div class="response-next">
                     <p id="response-detail"></p>
                     <button id="response-action" class="button secondary response-action" type="button"></button>
+                    <form class="visit-picker" id="visit-picker" hidden>
+                      <fieldset>
+                        <legend id="visit-window">Sample test-drive times</legend>
+                        <div class="visit-slots" id="visit-slots"></div>
+                      </fieldset>
+                      <button class="button primary advance" id="confirm-visit" type="submit">Confirm sample visit</button>
+                      <p id="visit-error" role="status" hidden></p>
+                    </form>
+                    <div class="visit-confirmation" id="visit-confirmation" role="status" tabindex="-1" hidden>
+                      <span class="guided-success-icon" aria-hidden="true">✓</span>
+                      <div>
+                        <strong>Sample test drive booked</strong>
+                        <p id="visit-receipt"></p>
+                      </div>
+                    </div>
                     <p id="response-feedback" class="response-feedback" role="status" tabindex="-1" hidden></p>
                   </div>
                 </div>
