@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Compare dealership website leads with CRM records and investigate the gaps.">
-  <meta name="theme-color" content="#102a2a">
+  <meta name="theme-color" content="#0c1e20">
   <title>Lead Reconciliation | Interactive demo</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="preload" href="showroom.webp" as="image" type="image/webp">
+  <link rel="stylesheet" href="styles.css?v=2">
   <script defer src="reconcile.js"></script>
   <script defer src="sample-data.js"></script>
-  <script defer src="app.js"></script>
+  <script defer src="app.js?v=2"></script>
 </head>
 <body>
   <header class="site-header">
@@ -29,10 +30,14 @@
 
   <main class="shell">
     <section id="overview" class="hero" aria-labelledby="title">
+      <div class="hero-image" aria-hidden="true"></div>
       <div class="hero-copy">
-        <h1 id="title">See which leads<br class="hero-break"> made it to the CRM.</h1>
-        <p>Compare dealership website inquiries with CRM records. Find missing leads, duplicates, and changes worth checking.</p>
-        <a class="button primary" id="review-exceptions" href="#records">Review exceptions</a>
+        <h1 id="title">Find the leads<br class="hero-break"> your CRM missed.</h1>
+        <p>Compare dealership website inquiries with CRM records to spot missing leads, duplicates, and data mismatches.</p>
+        <div class="hero-actions">
+          <a class="button primary" id="review-exceptions" href="#records">Explore the demo</a>
+          <button class="button hero-secondary" type="button" id="sample-example">Inspect a sample lead</button>
+        </div>
       </div>
       <div class="flow" aria-label="Reconciliation data flow">
         <div class="flow-node flow-source">

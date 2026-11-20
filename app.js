@@ -250,4 +250,6 @@
 
   createLegend();
   replaceDataset(sample.website, sample.crm, "Sample data");
+  const exampleRow = result.rows.find((row) => row.id === "LD-1005");
+  byId("sample-example").addEventListener("click", () => showDetails(exampleRow));
 })();
