@@ -10,6 +10,7 @@
   const filterButtons = Array.from(document.querySelectorAll("[data-filter]"));
   const dialog = byId("detail-dialog");
   const caseSteps = Array.from(byId("case-progress").children);
+  const eventLog = byId("event-log");
   const importForm = byId("import-form");
   const importButton = importForm.querySelector("button[type='submit']");
   const searchInput = byId("search");
@@ -22,12 +23,17 @@
   const receivedTime = new Intl.DateTimeFormat("en-US", {
     hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles"
   }).format(new Date(sampleInquiry.submitted_at)) + " PT";
+  const actionTime = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric", minute: "2-digit", second: "2-digit", timeZone: "America/Los_Angeles"
+  });
   const budgetInput = byId("buyer-budget");
   const timingInput = byId("buyer-timing");
   const consentInput = byId("buyer-consent");
   let demoSales = sample.crm;
   let usingSample = true;
   let lastRecovery = null;
+  let recoveryAttempts = 0;
+  let recoveryDelta = "";
   let followUpQueued = false;
   let dealWon = false;
   let result;
@@ -43,6 +49,17 @@
 
   function setText(id, value) {
     byId(id).textContent = value;
+  }
+
+  function logAction(title, detail) {
+    const stamp = new Date();
+    const date = element("time", "", actionTime.format(stamp) + " PT");
+    date.dateTime = stamp.toISOString();
+    const item = element("li");
+    const metadata = element("span", "", detail + " · ");
+    metadata.append(date);
+    item.append(element("strong", "", title), metadata);
+    eventLog.append(item);
   }
 
   function renderSummary(datasetLabel) {
@@ -197,16 +214,13 @@
     byId("story-summary").hidden = recovered;
     byId("story-receipt").hidden = !recovered;
     if (recovered) {
-      setText("receipt-title", lastRecovery ? "One sales record added" : "Duplicate prevented");
+      setText("receipt-title", lastRecovery ? "One sales record added" : "Duplicate prevented · attempt " + recoveryAttempts);
       setText("receipt-detail", lastRecovery
-        ? "The sales team can now see " + sampleInquiry.lead_id + "."
+        ? recoveryDelta + " The sample sales system now has " + sampleInquiry.lead_id + "."
         : sampleInquiry.lead_id + " was already there. The test added zero records.");
     }
-    if (recovered && followUpQueued) {
-      setText("show-follow-up", dealWon ? "View deal outcome" : "View queued follow-up");
-    }
     byId("show-follow-up").hidden = !recovered;
-    setText("run-test", recovered ? "Test duplicate check" : "Recover inquiry");
+    setText("run-test", recovered ? "Test a safe retry" : "Recover inquiry");
     byId("run-test").classList.toggle("primary", !recovered);
     byId("run-test").classList.toggle("secondary", recovered);
   }
@@ -224,13 +238,13 @@
         element("span", "", "All-wheel drive · Stock " + car.stock));
       const price = element("div", "vehicle-price");
       price.append(element("strong", "", journey.dollars.format(car.price)));
-      if (!index) price.append(element("span", "", "Top match"));
+      if (!index) price.append(element("span", "", car.stock === sampleInquiry.vehicle ? "Maya’s pick" : "Best fit"));
       item.append(name, price);
       return item;
     });
     byId("vehicle-list").replaceChildren(...matches);
     setText("reply-message", plan.reply);
-    byId("queue-follow-up").disabled = !consentInput.checked;
+    byId("queue-follow-up").setAttribute("aria-disabled", String(!consentInput.checked));
     byId("follow-up-status").hidden = consentInput.checked;
     setText("follow-up-status", consentInput.checked ? "" : "The reply stays a draft until the buyer opts in.");
   }
@@ -239,8 +253,6 @@
     setText("outcome-summary", dealWon
       ? "Maya’s recovered inquiry became a sale in this example."
       : "The draft is saved in the demo queue. You can now record the sample sales outcome.");
-    byId("duplicate-event").hidden = lastRecovery !== false;
-    byId("won-event").hidden = !dealWon;
     byId("scoreboard").hidden = !dealWon;
     byId("close-deal").hidden = dealWon;
     byId("restart-story").className = "button " + (dealWon ? "primary" : "secondary");
@@ -254,6 +266,7 @@
       const complete = index < step || (index === 2 && dealWon);
       item.classList.toggle("complete", complete);
       item.firstElementChild.textContent = complete ? "✓" : String(index + 1);
+      item.querySelector(".sr-only").textContent = complete ? "Completed: " : "";
       item.setAttribute("aria-current", index === step ? "step" : "false");
     }
     const titles = ["Maya Patel’s inquiry", "Help Maya find a car", dealWon ? "Deal won" : "Follow-up queued"];
@@ -269,12 +282,15 @@
   function resetJourney() {
     demoSales = sample.crm;
     lastRecovery = null;
+    recoveryAttempts = 0;
+    recoveryDelta = "";
     followUpQueued = false;
     dealWon = false;
     budgetInput.value = "32000";
     timingInput.value = "soon";
     consentInput.checked = true;
-    setText("show-follow-up", "Preview follow-up");
+    while (eventLog.children.length > 2) eventLog.lastElementChild.remove();
+    byId("queued-reply-text").parentElement.open = false;
     showStoryStep(0, false);
   }
 
@@ -337,10 +353,12 @@
   byId("previous").addEventListener("click", () => {
     page -= 1;
     renderTable();
+    if (byId("previous").disabled) byId("next").focus();
   });
   byId("next").addEventListener("click", () => {
     page += 1;
     renderTable();
+    if (byId("next").disabled) byId("previous").focus();
   });
   byId("close-detail").addEventListener("click", () => dialog.close());
   byId("export").addEventListener("click", () => downloadCsv("lead-exceptions.csv", core.exceptionsCsv(result)));
@@ -355,28 +373,43 @@
   });
   byId("run-test").addEventListener("click", () => {
     const recovery = journey.recover(sampleInquiry, demoSales);
+    recoveryAttempts += 1;
     lastRecovery = recovery.added;
     demoSales = recovery.records;
-    if (usingSample) {
-      result = core.reconcile(sample.website, demoSales);
-      renderSummary("Sample test");
-      renderTable();
+    if (recovery.added) {
+      const before = core.reconcile(sample.website, sample.crm).missingFromCrm;
+      const after = core.reconcile(sample.website, demoSales);
+      recoveryDelta = before + " → " + after.missingFromCrm + " missing inquiries.";
+      logAction("Recovery created one record", "Sales system · " + sampleInquiry.lead_id);
+      if (usingSample) {
+        result = after;
+        renderSummary("Sample data · recovery applied");
+        renderTable();
+      }
+    } else {
+      logAction("Retry " + (recoveryAttempts - 1) + " skipped", "Inquiry already present");
     }
     updateTrace();
     if (recovery.added) byId("show-follow-up").focus({ preventScroll: true });
   });
-  byId("show-follow-up").addEventListener("click", () => showStoryStep(followUpQueued ? 2 : 1));
+  byId("show-follow-up").addEventListener("click", () => showStoryStep(1));
   byId("back-to-trace").addEventListener("click", () => showStoryStep(0));
   for (const input of [budgetInput, timingInput, consentInput]) input.addEventListener("change", updateFollowUp);
   byId("queue-follow-up").addEventListener("click", () => {
     if (!consentInput.checked || followUpQueued || lastRecovery === null) return;
     followUpQueued = true;
-    setText("queued-event", "Saved in the demo queue");
+    const plan = journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value);
+    const car = plan.matches[0];
+    setText("queued-reply-text", plan.reply);
+    logAction("Follow-up queued", car
+      ? "Stock " + car.stock + " · " + journey.dollars.format(car.price)
+      : "Availability update");
     showStoryStep(2);
   });
   byId("close-deal").addEventListener("click", () => {
     if (!followUpQueued || dealWon) return;
     dealWon = true;
+    logAction("Deal marked won", "Sample sales outcome recorded");
     showStoryStep(2);
   });
   byId("restart-story").addEventListener("click", () => {
@@ -389,7 +422,6 @@
   byId("website-time").dateTime = sampleInquiry.submitted_at;
   setText("website-time", receivedTime);
   setText("received-event", receivedTime + " · " + sampleInquiry.lead_id);
-  setText("recovered-event", "Sales system · " + sampleInquiry.lead_id);
   createLegend();
   replaceDataset(sample.website, sample.crm, "Sample data");
 })();

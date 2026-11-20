@@ -21,6 +21,7 @@
 
   function plan(inquiry, budget, timing) {
     const interestedStock = inquiry.vehicle;
+    const requestedVehicle = inventory.find((car) => car.stock === interestedStock);
     const readyToVisit = timing === "soon";
     const matches = inventory.filter((car) => car.type === "SUV" && car.drive === "AWD" && car.price < budget)
       .sort((left, right) => Number(right.stock === interestedStock) -
@@ -29,10 +30,14 @@
     const buyerMessage = readyToVisit
       ? "Is stock " + interestedStock + " still available? I’m looking for an all-wheel-drive SUV under " +
         dollars.format(budget) + ". I can stop by this weekend."
-      : "I’m comparing all-wheel-drive SUVs under " + dollars.format(budget) +
-        ". I haven’t decided when I’ll come in yet.";
+      : "Is stock " + interestedStock + " still available? I’m comparing all-wheel-drive SUVs under " +
+        dollars.format(budget) + " and haven’t decided when I’ll come in.";
     const firstName = inquiry.customer.split(" ")[0];
     let reply = "Hi " + firstName + ", thanks for telling us what you’re looking for. ";
+    if (requestedVehicle && requestedVehicle.price >= budget) {
+      reply += "The car you asked about (stock " + interestedStock + ") is " +
+        dollars.format(requestedVehicle.price) + ", which is above your limit. ";
+    }
     if (recommended) {
       reply += "We have a " + recommended.model + " with all-wheel drive for " +
         dollars.format(recommended.price) + " (stock " + recommended.stock + "). ";
@@ -44,7 +49,7 @@
       matches, buyerMessage, reply,
       intent: readyToVisit ? "Hot lead" : "Still browsing",
       reason: readyToVisit ? "Asked about a specific car and offered a visit window." :
-        "Shared vehicle preferences with no visit date yet."
+        "Asked about a specific car, with no visit date yet."
     };
   }
 

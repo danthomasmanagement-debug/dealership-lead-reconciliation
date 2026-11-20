@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#f7f6ef">
   <title>Lead Check | Dealership inquiry demo</title>
   <link rel="preload" href="instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=4">
-  <script defer src="reconcile.js"></script>
-  <script defer src="sample-data.js"></script>
-  <script defer src="demo-journey.js"></script>
-  <script defer src="app.js?v=4"></script>
+  <link rel="stylesheet" href="styles.css?v=5">
+  <script defer src="reconcile.js?v=5"></script>
+  <script defer src="sample-data.js?v=5"></script>
+  <script defer src="demo-journey.js?v=5"></script>
+  <script defer src="app.js?v=5"></script>
 </head>
 <body>
   <header class="site-header">
@@ -34,10 +34,10 @@
         <p class="hero-note">Fictional data. No sign-in required.</p>
       </div>
       <section class="case-panel" aria-labelledby="story-title">
-        <ol id="case-progress" class="case-progress" aria-label="Demo progress">
-          <li aria-current="step"><span>1</span> Recovery</li>
-          <li><span>2</span> Follow-up</li>
-          <li><span>3</span> Outcome</li>
+        <ol id="case-progress" class="case-progress" aria-label="Demo progress" role="list">
+          <li aria-current="step"><span class="step-marker" aria-hidden="true">1</span><span class="sr-only"></span>Recovery</li>
+          <li><span class="step-marker" aria-hidden="true">2</span><span class="sr-only"></span>Follow-up</li>
+          <li><span class="step-marker" aria-hidden="true">3</span><span class="sr-only"></span>Outcome</li>
         </ol>
         <div class="case-content">
           <p class="case-id">Riverbend Motors <span aria-hidden="true">/</span> <span id="case-id">LD-1002</span></p>
@@ -54,9 +54,11 @@
               </div>
             </dl>
             <p id="story-summary" class="case-note">The two systems are checked using the same inquiry ID.</p>
-            <div class="story-receipt" id="story-receipt" role="status" hidden>
-              <strong id="receipt-title"></strong>
-              <p id="receipt-detail"></p>
+            <div role="status">
+              <div class="story-receipt" id="story-receipt" hidden>
+                <strong id="receipt-title"></strong>
+                <p id="receipt-detail"></p>
+              </div>
             </div>
             <div class="story-actions">
               <button id="show-follow-up" class="button primary advance" type="button" hidden>Preview follow-up</button>
@@ -98,22 +100,22 @@
               <p id="reply-message"></p>
             </section>
             <label class="consent-control"><input id="buyer-consent" type="checkbox" checked> Buyer opted in to follow-up</label>
-            <p id="follow-up-status" class="case-note" role="status" hidden></p>
+            <div role="status"><p id="follow-up-status" class="case-note" hidden></p></div>
             <div class="story-actions">
-              <button id="queue-follow-up" class="button primary advance" type="button">Queue demo follow-up</button>
+              <button id="queue-follow-up" class="button primary advance" type="button" aria-describedby="follow-up-status">Queue demo follow-up</button>
               <button id="back-to-trace" class="text-button" type="button">Back to recovery</button>
             </div>
           </div>
           <div id="outcome-view" hidden>
             <p id="outcome-summary" class="case-note"></p>
-            <ol class="event-log" aria-label="Inquiry activity">
+            <ol class="event-log" id="event-log" aria-label="Inquiry activity" role="list">
               <li><strong>Website saved Maya’s inquiry</strong><span id="received-event"></span></li>
               <li class="event-missing"><strong>Sales record missing</strong><span>No matching inquiry ID</span></li>
-              <li><strong>Recovery created one record</strong><span id="recovered-event"></span></li>
-              <li id="duplicate-event" hidden><strong>Repeat recovery skipped</strong><span>The sales record was already there</span></li>
-              <li><strong>Follow-up queued</strong><span id="queued-event"></span></li>
-              <li id="won-event" hidden><strong>Deal marked won</strong><span>Sales outcome recorded in the demo</span></li>
             </ol>
+            <details class="queued-reply">
+              <summary>View queued reply</summary>
+              <p id="queued-reply-text"></p>
+            </details>
             <section class="scoreboard" aria-labelledby="score-title" id="scoreboard" hidden>
               <h3 id="score-title">Agent scoreboard</h3>
               <div>
@@ -127,6 +129,7 @@
               <button id="restart-story" class="button secondary" type="button">Restart demo</button>
             </div>
           </div>
+          <p class="case-note">Simulation only. Messages stay in this browser.</p>
         </div>
       </section>
     </section>
@@ -158,11 +161,11 @@
             <p id="table-caption" aria-live="polite">Loading sample records</p>
           </div>
           <button id="export" type="button" class="button secondary">
-            Download follow-up list
+            Download issue list (CSV)
           </button>
         </div>
         <div class="table-controls">
-          <div class="segmented" aria-label="Filter lead records">
+          <div class="segmented" role="group" aria-label="Filter lead records">
             <button type="button" data-filter="issues" aria-pressed="true">Needs review</button>
             <button type="button" data-filter="all" aria-pressed="false">All inquiries</button>
             <button type="button" data-filter="matched" aria-pressed="false">Matched</button>
