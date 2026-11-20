@@ -11,6 +11,8 @@
   const dialog = byId("detail-dialog");
   const caseSteps = Array.from(byId("case-progress").children);
   const scoreButtons = Array.from(document.querySelectorAll("[data-score]"));
+  const quickEditButtons = Array.from(document.querySelectorAll("[data-quick]"));
+  const responseButtons = Array.from(document.querySelectorAll("[data-response]"));
   const landingSources = Array.from(document.querySelectorAll("[data-preview-source]"));
   const traceSources = Array.from(document.querySelectorAll("[data-trace]"));
   const navigation = Array.from(document.querySelectorAll("[data-view-link]"));
@@ -47,14 +49,22 @@
   const budgetInput = byId("buyer-budget");
   const timingInput = byId("buyer-timing");
   const consentInput = byId("buyer-consent");
+  const replyEdits = { short: false, alternateTime: false };
+  const consentTask = "Review Maya’s inquiry and confirm her contact preferences.";
+  const responseActions = { visit: "Log sample test drive", draft: "Draft a cheaper reply", task: "Create sales task" };
   let demoSales = sample.crm;
   let usingSample = true;
   let recoveryProof = null;
   let recoveryAttempts = 0;
-  let followUpQueued = false;
+  let queuedPlan = null;
+  let handoffTask = false;
+  let responseKind = "";
+  let response = null;
+  let responseApplied = false;
+  let responseDraft = "";
+  let responseResult = "";
   let dealWon = false;
   let selectedStock = "";
-  let queuedCar;
   let traceSource = "sales";
   let activeView;
   let recordsLabel = "Sample data";
@@ -368,6 +378,10 @@
     return total + (total === 1 ? " sales record" : " sales records");
   }
 
+  function handoffComplete() {
+    return queuedPlan !== null || handoffTask;
+  }
+
   function updateTrace() {
     const recovered = recoveryProof !== null;
     setText("story-sales-title", recovered ? "Recovered" : "Missing");
@@ -394,23 +408,26 @@
       }
     }
     byId("show-follow-up").hidden = !recovered;
-    setText("show-follow-up", followUpQueued ? "See queued reply" : "See suggested reply");
+    setText("show-follow-up", queuedPlan ? "See queued reply" : "See suggested reply");
     byId("run-test").hidden = recovered;
   }
 
-  function currentPlan() {
-    return journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value, selectedStock);
+  function currentPlan(stock = selectedStock) {
+    return journey.plan(sampleInquiry, Number(budgetInput.value), timingInput.value, stock, replyEdits);
   }
 
   function renderSuggestion(plan) {
     const car = plan.recommended;
     setText("suggested-car", car ? car.model + " · " + journey.dollars.format(car.price) : "Inventory follow-up");
     setText("suggestion-reason", car ? "All-wheel drive · Within budget" : "No cars match this budget");
+    byId("suggestion-explainer").hidden = !car;
+    setText("recommendation-detail", journey.recommendationReason(sampleInquiry, Number(budgetInput.value), car));
     setText("reply-message", plan.reply);
   }
 
   function updateFollowUp() {
-    const plan = currentPlan();
+    const plan = queuedPlan || currentPlan();
+    const complete = handoffComplete();
     if (plan.recommended?.stock !== selectedStock) selectedStock = "";
     setText("buyer-message", originalPlan.buyerMessage);
     setText("intent-level", plan.intent);
@@ -424,7 +441,7 @@
       choice.name = "offered-stock";
       choice.value = car.stock;
       choice.checked = car === plan.recommended;
-      choice.disabled = followUpQueued;
+      choice.disabled = complete;
       const name = element("div");
       name.append(element("strong", "", car.model),
         element("span", "", "All-wheel drive · Stock " + car.stock));
@@ -437,24 +454,95 @@
     });
     byId("vehicle-list").replaceChildren(...matches);
     renderSuggestion(plan);
-    setText("reply-state", followUpQueued ? "Queued in demo" : "Suggested reply");
-    for (const input of [budgetInput, timingInput, consentInput]) input.disabled = followUpQueued;
-    byId("queue-follow-up").hidden = followUpQueued;
-    byId("review-outcome").hidden = !followUpQueued;
+    setText("reply-state", queuedPlan ? "Queued in demo" : "Suggested reply");
+    for (const input of [budgetInput, timingInput, consentInput]) input.disabled = complete;
+    for (const button of quickEditButtons) {
+      const key = button.dataset.quick;
+      button.disabled = complete;
+      if (key !== "cheaper") button.setAttribute("aria-pressed", String(replyEdits[key]));
+    }
+    byId("queue-follow-up").hidden = complete || !consentInput.checked;
+    byId("create-sales-task").hidden = complete || consentInput.checked;
+    byId("review-outcome").hidden = !complete;
     byId("queue-follow-up").setAttribute("aria-disabled", String(!consentInput.checked));
-    byId("follow-up-status").hidden = consentInput.checked;
-    setText("follow-up-status", consentInput.checked ? "" : "Buyer consent is required.");
+    byId("follow-up-status").hidden = complete || consentInput.checked;
+    setText("follow-up-status", consentInput.checked ? "" : "Texting requires consent.");
+  }
+
+  function applyQuickEdit(key) {
+    if (handoffComplete()) return;
+    let status;
+    if (key === "cheaper") {
+      const plan = currentPlan();
+      const cheaper = journey.cheaperMatch(plan.matches, plan.recommended);
+      if (cheaper) selectedStock = cheaper.stock;
+      status = cheaper ? "Now offering stock " + cheaper.stock + "." : "This is already the lowest-priced match.";
+    } else {
+      replyEdits[key] = !replyEdits[key];
+      status = key === "short" ? (replyEdits.short ? "Shortened the draft." : "Restored the full draft.") :
+        "Draft updated.";
+    }
+    updateFollowUp();
+    const message = byId("quick-edit-status");
+    message.hidden = false;
+    message.textContent = status;
+  }
+
+  function renderBuyerResponse() {
+    for (const button of responseButtons) {
+      button.setAttribute("aria-pressed", String(button.dataset.response === responseKind));
+      button.disabled = responseApplied;
+    }
+    setText("buyer-response", response?.message || "");
+    setText("response-detail", response?.detail || "");
+    setText("response-action", response ? responseActions[response.nextAction] : "");
+    byId("response-action").hidden = !response || responseApplied;
+    byId("response-draft").hidden = !responseDraft;
+    setText("response-draft-text", responseDraft);
+    byId("response-feedback").hidden = !responseResult;
+    setText("response-feedback", responseResult);
+  }
+
+  function chooseBuyerResponse(kind) {
+    if (!queuedPlan || responseApplied) return;
+    responseKind = kind;
+    response = journey.respondToReply(sampleInquiry, queuedPlan, kind, Number(budgetInput.value));
+    renderBuyerResponse();
+  }
+
+  function applyBuyerResponse() {
+    if (!queuedPlan || !response || responseApplied) return;
+    responseApplied = true;
+    logAction("Sample buyer response", response.message);
+    if (response.nextAction === "visit") {
+      responseResult = "Sample test drive noted for " + queuedPlan.appointment + ".";
+      logAction("Sample test drive noted", queuedPlan.appointment);
+    } else if (response.nextAction === "draft") {
+      responseDraft = currentPlan(response.car.stock).reply;
+      responseResult = "Cheaper option drafted.";
+      logAction("Cheaper reply drafted", responseDraft);
+    } else {
+      responseResult = "Sales task created.";
+      logAction("Sales task created", response.detail);
+    }
+    renderBuyerResponse();
+    byId("response-feedback").focus();
   }
 
   function updateOutcome() {
+    const queuedCar = queuedPlan?.recommended;
     setText("handoff-summary", queuedCar ? "Stock " + queuedCar.stock + " · Buyer consent confirmed" :
-      "Inventory follow-up · Buyer consent confirmed");
+      handoffTask ? consentTask : "Inventory follow-up · Buyer consent confirmed");
+    byId("response-demo").hidden = queuedPlan === null;
+    byId("outcome-options").hidden = queuedPlan === null;
     byId("scoreboard").hidden = !dealWon;
     if (dealWon) showScoreProof(0);
-    byId("close-deal").hidden = dealWon;
+    byId("close-deal").hidden = !queuedPlan || dealWon;
+    renderBuyerResponse();
   }
 
   function showScoreProof(active) {
+    const queuedCar = queuedPlan?.recommended;
     const retries = recoveryAttempts - 1;
     const retryDetail = retries > 0 ? " Skipped " + retries + (retries === 1 ? " duplicate retry." : " duplicate retries.") : "";
     const details = [
@@ -473,7 +561,8 @@
     byId("story-trace-view").hidden = step !== 0;
     byId("follow-up-view").hidden = step !== 1;
     byId("outcome-view").hidden = step !== 2;
-    const completed = [recoveryProof !== null, followUpQueued, followUpQueued];
+    const complete = handoffComplete();
+    const completed = [recoveryProof !== null, complete, complete];
     for (const [index, item] of caseSteps.entries()) {
       const complete = completed[index];
       item.classList.toggle("complete", complete);
@@ -483,7 +572,7 @@
       item.querySelector("button").disabled = index > 0 && !completed[index - 1];
     }
     const titles = [recoveryProof ? "Maya’s inquiry is back" : "Recover the inquiry",
-      "Review the reply", dealWon ? "Sample deal won" : "Reply queued"];
+      "Review the reply", handoffTask ? "Sales task created" : dealWon ? "Sample deal won" : "Reply queued"];
     setText("story-title", titles[step]);
     [updateTrace, updateFollowUp, updateOutcome][step]();
     if (moveFocus) {
@@ -496,17 +585,26 @@
   function resetJourney() {
     recoveryProof = null;
     recoveryAttempts = 0;
-    followUpQueued = false;
+    queuedPlan = null;
+    handoffTask = false;
+    responseKind = "";
+    response = null;
+    responseApplied = false;
+    responseDraft = "";
+    responseResult = "";
+    replyEdits.short = false;
+    replyEdits.alternateTime = false;
     dealWon = false;
     selectedStock = "";
-    queuedCar = undefined;
     traceSource = "sales";
     budgetInput.value = "32000";
     timingInput.value = "soon";
     consentInput.checked = true;
     clearCaseEvents("recovery", eventLog, 2);
     byId("queued-reply-text").closest("details").open = false;
-    for (const id of ["case-details", "original-inquiry", "reply-customize", "outcome-options"]) byId(id).open = false;
+    byId("quick-edit-status").hidden = true;
+    for (const id of ["case-details", "original-inquiry", "reply-customize", "outcome-options",
+      "suggestion-explainer", "response-demo"]) byId(id).open = false;
     for (const id of ["guided-success", "guided-done"]) byId(id).classList.remove("is-fresh");
     showStoryStep(0, false);
   }
@@ -567,8 +665,9 @@
       lines.push(
         "Sales records for this inquiry: " + recoveryProof.salesBefore + " → " + recoveryProof.salesAfter,
         "Sample dataset impact: " + recoveryImpact(),
-        "Text consent: " + (followUpQueued ? "Confirmed" : "Follow-up not queued"),
-        "Draft: " + (followUpQueued ? byId("queued-reply-text").textContent : "Follow-up not queued"),
+        "Text consent: " + (queuedPlan ? "Confirmed" : "Pending"),
+        "Handoff: " + (handoffTask ? consentTask : "Sample reply queued"),
+        "Draft: " + (queuedPlan?.reply || "Pending consent"),
         "Simulated sale: " + (dealWon ? "Marked won" : "No sale recorded")
       );
     }
@@ -685,7 +784,8 @@
   byId("review-outcome").addEventListener("click", () => showStoryStep(2));
   byId("finish-customizing").addEventListener("click", () => {
     byId("reply-customize").open = false;
-    byId(followUpQueued ? "review-outcome" : "queue-follow-up").focus();
+    const action = handoffComplete() ? "review-outcome" : consentInput.checked ? "queue-follow-up" : "create-sales-task";
+    byId(action).focus();
   });
   for (const [index, step] of caseSteps.entries()) {
     step.querySelector("button").addEventListener("click", () => showStoryStep(index));
@@ -700,6 +800,16 @@
     });
   }
   for (const input of [budgetInput, timingInput, consentInput]) input.addEventListener("change", updateFollowUp);
+  for (const button of quickEditButtons) {
+    button.addEventListener("click", () => applyQuickEdit(button.dataset.quick));
+  }
+  for (const button of responseButtons) {
+    button.addEventListener("click", () => chooseBuyerResponse(button.dataset.response));
+  }
+  byId("response-demo").addEventListener("toggle", (event) => {
+    if (event.currentTarget.open && !response) chooseBuyerResponse("interested");
+  });
+  byId("response-action").addEventListener("click", applyBuyerResponse);
   for (const [index, button] of scoreButtons.entries()) {
     button.addEventListener("click", () => showScoreProof(index));
   }
@@ -709,19 +819,25 @@
     renderSuggestion(currentPlan());
   });
   byId("queue-follow-up").addEventListener("click", () => {
-    if (!consentInput.checked || followUpQueued || recoveryProof === null) return;
-    followUpQueued = true;
-    const plan = currentPlan();
-    queuedCar = plan.recommended;
-    setText("queued-reply-text", plan.reply);
+    if (!consentInput.checked || handoffComplete() || recoveryProof === null) return;
+    queuedPlan = currentPlan();
+    const queuedCar = queuedPlan.recommended;
+    setText("queued-reply-text", queuedPlan.reply);
     logAction("Follow-up queued", queuedCar
       ? "Stock " + queuedCar.stock + " · " + journey.dollars.format(queuedCar.price)
       : "Availability update");
     byId("guided-done").classList.add("is-fresh");
     showStoryStep(2);
   });
+  byId("create-sales-task").addEventListener("click", () => {
+    if (consentInput.checked || handoffComplete() || recoveryProof === null) return;
+    handoffTask = true;
+    logAction("Sales task created", consentTask);
+    byId("guided-done").classList.add("is-fresh");
+    showStoryStep(2);
+  });
   byId("close-deal").addEventListener("click", () => {
-    if (!followUpQueued || dealWon) return;
+    if (!queuedPlan || dealWon) return;
     dealWon = true;
     logAction("Deal marked won", "Sample sales outcome recorded");
     showStoryStep(2);

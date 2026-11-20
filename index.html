@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#f7f6ef">
   <title>Lead Check | Dealership inquiry demo</title>
   <link rel="preload" href="instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=11">
   <script defer src="reconcile.js?v=5"></script>
   <script defer src="sample-data.js?v=7"></script>
-  <script defer src="demo-journey.js?v=10"></script>
-  <script defer src="app.js?v=10"></script>
+  <script defer src="demo-journey.js?v=11"></script>
+  <script defer src="app.js?v=11"></script>
 </head>
 <body>
   <header class="site-header">
@@ -106,6 +106,10 @@
               <div class="suggestion-chip">
                 <strong id="suggested-car"></strong>
                 <span id="suggestion-reason"></span>
+                <details class="suggestion-explainer" id="suggestion-explainer">
+                  <summary>Why this car?</summary>
+                  <p id="recommendation-detail"></p>
+                </details>
               </div>
               <section class="message-thread guided-reply" aria-labelledby="thread-title">
                 <header class="thread-header">
@@ -132,11 +136,18 @@
               <div role="status"><p id="follow-up-status" class="case-note" hidden></p></div>
               <div class="guide-actions">
                 <button id="queue-follow-up" class="button primary advance" type="button" aria-describedby="follow-up-status">Queue sample reply</button>
+                <button id="create-sales-task" class="button primary advance task-action" type="button" hidden>Create sales task</button>
                 <button id="review-outcome" class="button primary advance" type="button" hidden>See the result</button>
               </div>
               <details class="reply-customize" id="reply-customize">
                 <summary>Customize reply</summary>
                 <div class="follow-up-options">
+                  <div class="quick-edits" role="group" aria-label="Quick draft edits">
+                    <button type="button" data-quick="short" aria-pressed="false">Make it shorter</button>
+                    <button type="button" data-quick="cheaper">Find a cheaper car</button>
+                    <button type="button" data-quick="alternateTime" aria-pressed="false">Offer another time</button>
+                  </div>
+                  <p id="quick-edit-status" class="quick-edit-status" role="status" hidden></p>
                   <div class="follow-controls">
                     <label>What-if budget
                       <select id="buyer-budget">
@@ -172,6 +183,30 @@
                   <p id="handoff-summary" class="handoff-summary"></p>
                 </div>
               </div>
+              <details class="response-demo" id="response-demo" hidden>
+                <summary>See Maya’s response</summary>
+                <div class="response-content">
+                  <div class="response-choices" role="group" aria-label="Choose a sample response">
+                    <button type="button" data-response="interested" aria-pressed="false">Interested</button>
+                    <button type="button" data-response="cheaper" aria-pressed="false">Ask for a cheaper car</button>
+                  </div>
+                  <div class="response-thread">
+                    <div class="message incoming">
+                      <p class="message-meta"><strong>Maya</strong><span>Sample response</span></p>
+                      <p class="message-text" id="buyer-response" aria-live="polite"></p>
+                    </div>
+                    <div class="message outgoing" id="response-draft" hidden>
+                      <p class="message-meta"><strong>New draft</strong></p>
+                      <p class="message-text" id="response-draft-text"></p>
+                    </div>
+                  </div>
+                  <div class="response-next">
+                    <p id="response-detail"></p>
+                    <button id="response-action" class="button secondary response-action" type="button"></button>
+                    <p id="response-feedback" class="response-feedback" role="status" tabindex="-1" hidden></p>
+                  </div>
+                </div>
+              </details>
               <div class="guide-actions">
                 <button id="restart-story" class="button primary" type="button">Start over</button>
                 <button class="button secondary" type="button" data-report="recovery">Download report</button>

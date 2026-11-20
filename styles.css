@@ -579,33 +579,43 @@ tbody tr:hover { background: #f7faf7; }
 .guide-actions .primary { min-height: 3rem; padding-inline: 1rem; font-size: .94rem; white-space: normal; }
 .guide-actions .secondary,
 .guide-actions .text-button { min-height: 2.75rem; }
+.guide-actions .task-action { min-height: 3rem; white-space: normal; }
 
 .case-details,
-.reply-customize {
+.reply-customize,
+.response-demo {
   min-width: 0; border: 1px solid #d5dfd3; border-radius: .63rem; background: #fcfdf9;
 }
 .case-details > summary,
 .reply-customize > summary,
-.original-inquiry > summary {
+.original-inquiry > summary,
+.response-demo > summary {
   display: flex; align-items: center; justify-content: space-between; gap: .4rem;
   min-height: 2.75rem; padding: .55rem .76rem; border-radius: .56rem;
   color: #315443; font-size: .86rem; font-weight: 720; cursor: pointer; list-style: none;
 }
 .case-details > summary::-webkit-details-marker,
 .reply-customize > summary::-webkit-details-marker,
-.original-inquiry > summary::-webkit-details-marker { display: none; }
+.original-inquiry > summary::-webkit-details-marker,
+.response-demo > summary::-webkit-details-marker,
+.suggestion-explainer > summary::-webkit-details-marker { display: none; }
 .case-details > summary::after,
 .reply-customize > summary::after,
-.original-inquiry > summary::after {
+.original-inquiry > summary::after,
+.response-demo > summary::after,
+.suggestion-explainer > summary::after {
   content: ""; width: .48rem; height: .48rem; margin-inline: .2rem; border: solid #557465;
   border-width: 0 2px 2px 0; flex: 0 0 auto; transform: translateY(-.11rem) rotate(45deg);
 }
 .case-details[open] > summary::after,
 .reply-customize[open] > summary::after,
-.original-inquiry[open] > summary::after { transform: translateY(.11rem) rotate(225deg); }
+.original-inquiry[open] > summary::after,
+.response-demo[open] > summary::after,
+.suggestion-explainer[open] > summary::after { transform: translateY(.11rem) rotate(225deg); }
 .case-details > summary:hover,
 .reply-customize > summary:hover,
-.original-inquiry > summary:hover { background: #edf3e9; }
+.original-inquiry > summary:hover,
+.response-demo > summary:hover { background: #edf3e9; }
 .case-details-grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start;
   gap: .8rem; padding: .65rem .75rem .8rem; border-top: 1px solid #e5ebe0;
@@ -627,10 +637,39 @@ tbody tr:hover { background: #f7faf7; }
 }
 .suggestion-chip strong { color: #194c33; font-size: .88rem; }
 .suggestion-chip + .guided-reply { margin-top: .55rem; }
+.suggestion-chip:has(.suggestion-explainer) {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+}
+.suggestion-chip:has(.suggestion-explainer) > :not(.suggestion-explainer) { grid-column: 1; }
+.suggestion-explainer { min-width: 0; }
+.suggestion-explainer:not([open]) { grid-area: 1 / 2 / span 2; }
+.suggestion-explainer[open] { grid-column: 1 / -1; border-top: 1px solid #d5e2d3; }
+.suggestion-explainer > summary {
+  display: flex; align-items: center; gap: .35rem; min-height: 2.75rem; padding: 0 .4rem;
+  border-radius: .4rem; color: #215641; font-weight: 750; cursor: pointer; list-style: none;
+}
+.suggestion-explainer > summary::after { width: .37rem; height: .37rem; }
+.suggestion-explainer > summary:hover { background: #e3eede; }
+.suggestion-explainer > p { margin: 0 .4rem .4rem; font-size: .83rem; line-height: 1.35; }
+
 .reply-customize { margin-top: .73rem; }
 .reply-customize > :not(summary) { margin-inline: .76rem; }
 .reply-customize > .follow-up-options { padding-top: .27rem; }
 .reply-customize > :last-child { margin-bottom: .72rem; }
+.quick-edits,
+.response-choices { display: flex; flex-wrap: wrap; gap: .42rem; }
+.quick-edits button,
+.response-choices button {
+  min-height: 2.75rem; max-width: 100%; padding: .43rem .72rem; border: 1px solid #cbdacb;
+  border-radius: .55rem; background: #fff; color: var(--dark); text-align: left;
+  font-size: .82rem; font-weight: 730; line-height: 1.2; white-space: normal;
+}
+.quick-edits button:hover:not(:disabled),
+.response-choices button:hover:not(:disabled) { background: #edf5eb; border-color: #a4c2aa; }
+.quick-edits button[aria-pressed="true"],
+.response-choices button[aria-pressed="true"] { background: #dceedd; border-color: #81a88d; }
+.quick-edit-status { margin: .42rem 0 0; color: var(--muted); font-size: .82rem; line-height: 1.4; }
+.quick-edit-status:empty { margin: 0; }
 
 .guided-done {
   display: grid; justify-items: center; gap: .45rem; padding: clamp(.8rem, 4vw, 1.55rem);
@@ -642,6 +681,27 @@ tbody tr:hover { background: #f7faf7; }
 .guided-done h2,
 .guided-done h3 { margin: 0; letter-spacing: -.036em; line-height: 1.15; font-size: clamp(1.4rem, 3vw, 1.9rem); }
 .guided-done p { margin: 0; color: #415e4d; font-size: .88rem; line-height: 1.35; }
+.response-demo { margin-top: .73rem; }
+.response-demo > summary { color: var(--dark); }
+.response-content {
+  display: grid; gap: .62rem; padding: .66rem .75rem .75rem;
+  border-top: 1px solid #e5ebe0;
+}
+.response-thread {
+  display: grid; gap: .55rem; padding: .58rem .67rem; min-width: 0; border: 1px solid #d9e2d8;
+  border-radius: .65rem; background: linear-gradient(145deg, #f7f8f4, #eef4ed);
+}
+.response-next {
+  margin: 0; padding: .45rem .58rem; border-inline-start: 2px solid #81a88d;
+  background: #f1f6ef; color: #325644; font-size: .84rem; line-height: 1.4;
+}
+.response-next p { margin: 0; }
+.response-action { min-height: 2.75rem; max-width: 100%; justify-self: start; white-space: normal; }
+.response-feedback {
+  margin: 0; padding: .48rem .58rem; border-radius: .4rem;
+  background: #e6f2e4; color: #245641; font-size: .83rem; line-height: 1.35;
+}
+.response-feedback:empty { padding: 0; }
 
 @keyframes guided-arrival {
   0% { transform: scale(.76); box-shadow: 0 0 0 0 #74a9788c; }
@@ -708,7 +768,7 @@ tbody tr:hover { background: #f7faf7; }
   .demo-header > a { min-height: 2.25rem; }
   .guided-demo .demo-heading h1 { font-size: clamp(1.95rem, 8.1vw, 2.45rem); }
   .guided-demo .case-progress { padding-inline: .42rem; }
-  .guide-actions .primary { width: 100%; }
+  .guide-actions :is(.primary, .task-action) { width: 100%; }
   .guided-trace .story-step { min-height: 4.45rem; }
   .guided-reply .message.outgoing { max-width: 100%; }
   .case-progress { padding: .44rem .5rem; gap: .13rem; }
